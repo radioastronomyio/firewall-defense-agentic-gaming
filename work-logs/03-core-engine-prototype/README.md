@@ -79,7 +79,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | 3.3.1 | #12 | ✅ Complete | Fixed-slot enemy arrays |
 | 3.3.2 | #13 | ✅ Complete | Drop movement (half-cell fixed-point) |
 | 3.3.3 | #15 | ✅ Complete | Spawn logic |
-| 3.3.4 | #16 | ⬜ Pending | Array compaction |
+| 3.3.4 | #16 | ✅ Complete | Array compaction |
 | 3.3.5 | #17 | ⬜ Pending | Unit tests for enemy lifecycle |
 
 ---
@@ -209,6 +209,28 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 **Artifacts produced:**
 - `src/core/enemies.py` — added `spawn_enemy()` function
+- `src/core/__init__.py` — updated exports
+
+---
+
+### Session 7 — 2026-01-05
+
+**Focus:** Task 3.3.4 (Array compaction)
+
+| Activity | Result |
+|----------|--------|
+| 3.3.4: Array compaction | `compact_enemies()` — vectorized stable sort with zero-padding |
+| Export updates | `__init__.py` updated with `compact_enemies` export |
+
+**Key implementation details:**
+- Sort key: alive enemies use `spawn_tick`, dead enemies use `MAX_UINT32` to sort last
+- `np.argsort` with `kind='stable'` preserves relative order for same-tick spawns
+- Advanced indexing applies sort to all 5 arrays simultaneously
+- Zero-pads trailing slots after alive count
+- Returns alive count for caller convenience
+
+**Artifacts produced:**
+- `src/core/enemies.py` — added `compact_enemies()` function
 - `src/core/__init__.py` — updated exports
 
 ---
