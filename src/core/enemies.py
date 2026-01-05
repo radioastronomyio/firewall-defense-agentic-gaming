@@ -315,3 +315,130 @@ def move_enemies(state: EnemyState) -> None:
     """
     # Vectorized movement: increment y_half for all alive enemies
     state.enemy_y_half[state.enemy_alive] += ENEMY_SPEED_HALF
+
+
+# =============================================================================
+# Array Compaction
+# =============================================================================
+
+
+def compact_enemies(state: EnemyState) -> int:
+    """
+    Compact alive enemies to front of arrays, zero-pad trailing slots.
+
+    This function removes dead enemy slots from enemy arrays and shifts
+    alive enemies to maintain a contiguous block at the front of all 5 arrays.
+    Dead slots are moved to the end and zero-padded. The ordering of alive
+    enemies is preserved based on their spawn_tick (oldest first).
+
+    Compaction is critical for observation stability during training. Without
+    it, enemy positions would "jump" around the observation vector as slots
+    are reused, creating non-stationary observations that confuse the agent.
+    By compacting after each death, the observation structure remains stable:
+    slot 0 always contains the oldest alive enemy, slot 1 the second-oldest,
+    and so on.
+
+    Technical Details
+    -----------------
+    - Sort key: For alive enemies, use enemy_spawn_tick (ascending). For dead
+      enemies, use a large value (2^32 - 1) to sort them last.
+    - Stable sort: np.argsort with kind='stable' preserves relative order for
+      enemies spawned on the same tick.
+    - Vectorized: Single argsort operation, then advanced indexing applied to
+      all 5 arrays simultaneously. No Python loops over slots.
+    - In-place mutation: Arrays are modified directly, no copies returned.
+    - Zero-padding: Trailing slots (after alive count) are reset to zeros:
+      enemy_alive=False, enemy_y_half=0, enemy_x=0, enemy_type=0,
+      enemy_spawn_tick=0.
+
+    The compaction algorithm:
+    1. Create sort key array where alive enemies have key=spawn_tick,
+       dead enemies have key=MAX_UINT32 (2^32 - 1).
+    2. Compute sort indices using np.argsort with kind='stable'.
+    3. Apply sort indices to all 5 arrays using advanced indexing.
+    4. Zero-pad trailing slots (alive_count to MAX_ENEMIES).
+    5. Return alive_count for caller information.
+
+    Parameters
+    ----------
+    state : EnemyState
+        Enemy state arrays. All 5 arrays are mutated in-place.
+
+    Returns
+    -------
+    int
+        Number of alive enemies after compaction. Range: 0 to MAX_ENEMIES (20).
+
+    Notes
+    -----
+    This function is called once per tick during the simulation step loop,
+    after collision detection has marked dead enemies (enemy_alive=False).
+
+    The stable sort ensures that enemies spawned on the same tick maintain
+    their relative order. This is important for deterministic behavior when
+    multiple enemies spawn in the same tick (e.g., from a spawner event).
+
+    Compaction is computationally cheap: O(MAX_ENEMIES log MAX_ENEMIES) with
+    MAX_ENEMIES=20, which is negligible compared to the rest of the simulation.
+
+    Examples
+    --------
+    >>> state = create_enemy_state()
+    >>> rng = np.random.default_rng(42)
+    >>> # Spawn 3 enemies at different ticks
+    >>> spawn_enemy(state, 100, rng)  # Slot 0, tick 100
+    >>> spawn_enemy(state, 150, rng)  # Slot 1, tick 150
+    >>> spawn_enemy(state, 200, rng)  # Slot 2, tick 200
+    >>> # Kill slot 1 (middle enemy)
+    >>> state.enemy_alive[1] = False
+    >>> # Compact should shift alive enemies to front
+    >>> alive_count = compact_enemies(state)
+    >>> alive_count
+    2
+    >>> # Slot 0 should still have oldest enemy (tick 100)
+    >>> state.enemy_spawn_tick[0]
+    100
+    >>> # Slot 1 should have second-oldest (tick 200, shifted from slot 2)
+    >>> state.enemy_spawn_tick[1]
+    200
+    >>> # Slots 2-19 should be zero-padded
+    >>> state.enemy_alive[2:].any()
+    False
+    >>> # All trailing slots have enemy_alive=False
+    >>> assert not state.enemy_alive[2:].any()
+    """
+    # Create sort key: alive enemies sorted by spawn_tick, dead enemies last
+    # For alive enemies: key = spawn_tick (lower = older = first)
+    # For dead enemies: key = MAX_UINT32 (2^32 - 1) to sort last
+    sort_key = np.where(
+        state.enemy_alive,
+        state.enemy_spawn_tick,
+        np.iinfo(np.uint32).max,
+    )
+
+    # Compute sort indices with stable sort to preserve order for same tick
+    # argsort returns indices that would sort the array
+    # kind='stable' ensures relative order is preserved for equal keys
+    sort_indices = np.argsort(sort_key, kind="stable")
+
+    # Apply sort to all 5 arrays using advanced indexing
+    # This reorders elements in-place according to sort_indices
+    state.enemy_y_half = state.enemy_y_half[sort_indices]
+    state.enemy_x = state.enemy_x[sort_indices]
+    state.enemy_alive = state.enemy_alive[sort_indices]
+    state.enemy_type = state.enemy_type[sort_indices]
+    state.enemy_spawn_tick = state.enemy_spawn_tick[sort_indices]
+
+    # Count alive enemies (sum of True values in enemy_alive)
+    alive_count = int(np.sum(state.enemy_alive))
+
+    # Zero-pad trailing slots (from alive_count to MAX_ENEMIES)
+    # This ensures dead slots at the end are properly zeroed
+    if alive_count < MAX_ENEMIES:
+        state.enemy_y_half[alive_count:] = 0
+        state.enemy_x[alive_count:] = 0
+        state.enemy_alive[alive_count:] = False
+        state.enemy_type[alive_count:] = 0
+        state.enemy_spawn_tick[alive_count:] = 0
+
+    return alive_count

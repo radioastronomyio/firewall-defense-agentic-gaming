@@ -60,7 +60,7 @@ Implement Drop enemy with fixed-slot arrays and half-cell movement.
 | 3.3.1: Fixed-slot enemy arrays | ✅ Complete | `src/core/enemies.py` with 20 fixed slots. Arrays: enemy_y_half, enemy_x, enemy_alive, enemy_type, enemy_spawn_tick. Zero-padded, spawn-order sorted. |
 | 3.3.2: Drop movement (half-cell fixed-point) | ✅ Complete | Movement: `enemy_y_half[alive] += 1` per tick. Cell lookup: `cell_y = enemy_y_half // 2`. No floats. |
 | 3.3.3: Spawn logic | ✅ Complete | Spawn at y_half=0, random column (0-12). Uses seeded RNG. Find first dead slot via `np.argmax`. |
-| 3.3.4: Array compaction | ⬜ Pending | Remove dead enemies, shift alive to maintain contiguous block, preserve spawn order, zero-pad trailing. |
+| 3.3.4: Array compaction | ✅ Complete | Remove dead enemies, shift alive to maintain contiguous block, preserve spawn order, zero-pad trailing. |
 | 3.3.5: Unit tests for enemy lifecycle | ⬜ Pending | `tests/unit/test_enemies.py` covering spawn, movement, compaction, MAX_ENEMIES limit, half-cell conversion. |
 
 ### Task 3.4: Collision Resolution
