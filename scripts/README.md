@@ -4,12 +4,12 @@ title: "Scripts"
 description: "Training entrypoints and utility scripts"
 author: "VintageDon"
 date: "2026-01-04"
-version: "1.0"
+version: "1.1"
 status: "Active"
 tags:
   - type: directory-readme
   - domain: training
-  - tech: [python, stable-baselines3]
+  - tech: [python, powershell, stable-baselines3]
 repository: https://github.com/radioastronomyio/firewall-defense-agentic-gaming
 ---
 -->
@@ -24,13 +24,42 @@ Command-line scripts for training, evaluation, and utilities. These are entrypoi
 
 ```
 scripts/
-├── .gitkeep          # Placeholder
-└── README.md         # This file
+├── Initialize-GitHubProject.ps1   # GitHub project setup (labels, milestones, issues)
+├── Initialize-RepoStructure.ps1   # Repository scaffolding
+└── README.md                      # This file
 ```
 
 ---
 
-## 2. Planned Scripts
+## 2. Setup Scripts
+
+| Script | Purpose | Status |
+|--------|---------|--------|
+| Initialize-RepoStructure.ps1 | Create directory structure | ✅ Complete |
+| Initialize-GitHubProject.ps1 | Create GitHub labels, milestones, tasks, sub-tasks | ✅ Complete |
+
+### Initialize-GitHubProject.ps1
+
+Creates the full GitHub Project structure:
+
+- Labels for categorization (Task, Sub-Task, domain labels)
+- Milestones M01-M06
+- Tasks with sub-task linkages (progress bars)
+- Sub-tasks as assignable work units
+
+**Prerequisites:** `gh` CLI authenticated, `gh-sub-issue` extension installed.
+
+```powershell
+# Run from repository root
+.\scripts\Initialize-GitHubProject.ps1
+
+# Preview without creating
+.\scripts\Initialize-GitHubProject.ps1 -WhatIf
+```
+
+---
+
+## 3. Planned Scripts
 
 | Script | Purpose | Stage |
 |--------|---------|-------|
@@ -41,9 +70,9 @@ scripts/
 
 ---
 
-## 3. Usage Pattern
+## 4. Usage Pattern
 
-Scripts consume configs from `configs/`:
+Training scripts will consume configs from `configs/`:
 
 ```bash
 # Train with default config
@@ -58,7 +87,7 @@ python scripts/benchmark.py --steps 100000
 
 ---
 
-## 4. Hardware Targeting
+## 5. Hardware Targeting
 
 Training scripts detect available hardware:
 
@@ -70,7 +99,7 @@ Training scripts detect available hardware:
 
 ---
 
-## 5. Related
+## 6. Related
 
 | Document | Relationship |
 |----------|--------------|

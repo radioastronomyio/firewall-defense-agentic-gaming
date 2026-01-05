@@ -34,7 +34,7 @@ A discussion session where human and AI orchestrator:
 
 ### Process
 
-**Phase A: Scope Definition**
+Phase A: Scope Definition
 
 The human brings a project concept. Through discussion, establish:
 
@@ -46,7 +46,7 @@ The human brings a project concept. Through discussion, establish:
 
 Do not rush to generate. Stay in discussion until scope is clear.
 
-**Phase B: Repository Scaffolding**
+Phase B: Repository Scaffolding
 
 Once scope is understood:
 
@@ -71,7 +71,7 @@ project-name/
 └── [other standard files]
 ```
 
-**Phase C: Documentation**
+Phase C: Documentation
 
 Write/customize these files:
 
@@ -85,7 +85,7 @@ Write/customize these files:
 | `.kilocode/rules/memory-bank/architecture.md` | High-level structure decisions |
 | `.kilocode/rules/memory-bank/tech.md` | Technologies, setup, constraints |
 
-**Phase D: Initial Commit**
+Phase D: Initial Commit
 
 - Stage all files
 - Commit message: `Initial commit: repository scaffolding and documentation`
@@ -133,17 +133,17 @@ Transform the project scope into an actionable GitHub Project with:
 
 ### Process
 
-**Phase A: Scope Mapping**
+Phase A: Scope Mapping
 
 From M01 discussions, identify:
 
-1. **Milestones** — Major phases of work (typically 3-6 for initial mapping)
-2. **Tasks** — Parent issues within each milestone (groups of related work)
-3. **Sub-tasks** — Individual work units (session-sized, independently assignable)
+1. Milestones — Major phases of work (typically 3-6 for initial mapping)
+2. Tasks — Parent issues within each milestone (groups of related work)
+3. Sub-tasks — Individual work units (session-sized, independently assignable)
 
 Use numbering convention: `{Milestone}.{Task}.{SubTask}` (e.g., 2.1.3)
 
-**Phase B: Script Creation**
+Phase B: Script Creation
 
 Build the setup script following `.internal-files/github-project-setup-methodology.md`:
 
@@ -155,7 +155,7 @@ Build the setup script following `.internal-files/github-project-setup-methodolo
 
 Store script in `work-logs/02-github-project-frameout/` (e.g., `create-project.ps1`).
 
-**Phase C: Execution**
+Phase C: Execution
 
 Run the script. Verify:
 
@@ -165,7 +165,7 @@ Run the script. Verify:
 - All sub-tasks linked to parent tasks (progress bars visible)
 - Project board shows expected structure
 
-**Phase D: Project Board Configuration**
+Phase D: Project Board Configuration
 
 In GitHub:
 
@@ -197,7 +197,7 @@ After completion, write `work-logs/02-github-project-frameout/README.md` documen
 
 ## Work Unit Sizing
 
-Sub-tasks should be **session-sized**:
+Sub-tasks should be session-sized:
 
 - Completable in one working session (evening, afternoon)
 - Independently assignable (no blocking dependencies within the sub-task)
