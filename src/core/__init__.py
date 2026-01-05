@@ -14,9 +14,70 @@ that runs at >10k steps per second. No rendering, no Gymnasium dependencies.
 
 Modules:
     constants   - Game constants and dtype specifications
-    grid        - Grid state initialization and management (planned)
+    grid        - Grid state initialization and management
     walls       - Wall placement and cooldown mechanics (planned)
     enemies     - Enemy spawning, movement, and compaction (planned)
     collision   - Vectorized collision detection (planned)
     simulation  - Deterministic step loop (planned)
 """
+
+# =============================================================================
+# Public API
+# =============================================================================
+
+from src.core.constants import (
+    CELL_CD_FRAMES,
+    COOLDOWN_DTYPE,
+    DEFAULT_SPAWN_INTERVAL,
+    DEFAULT_WALL_HP,
+    EMPTY,
+    ENEMY_SPEED_HALF,
+    ENEMY_TYPE_DROP,
+    GCD_FRAMES,
+    GRID_DTYPE,
+    GRID_SHAPE,
+    HEIGHT,
+    MAX_ENEMIES,
+    MAX_EPISODE_TICKS,
+    NUM_ACTIONS,
+    OBSERVATION_SIZE,
+    REWARD_CORE_BREACH,
+    REWARD_ENEMY_KILLED,
+    REWARD_TICK_SURVIVED,
+    TOTAL_CELLS,
+    WALL,
+    WALL_HP_DTYPE,
+    WALL_STATE_DTYPE,
+    WIDTH,
+)
+from src.core.grid import GridState, create_grid_state
+
+__all__ = [
+    # Constants
+    "CELL_CD_FRAMES",
+    "COOLDOWN_DTYPE",
+    "DEFAULT_WALL_HP",
+    "DEFAULT_SPAWN_INTERVAL",
+    "EMPTY",
+    "ENEMY_SPEED_HALF",
+    "ENEMY_TYPE_DROP",
+    "GCD_FRAMES",
+    "GRID_DTYPE",
+    "GRID_SHAPE",
+    "HEIGHT",
+    "MAX_ENEMIES",
+    "MAX_EPISODE_TICKS",
+    "NUM_ACTIONS",
+    "OBSERVATION_SIZE",
+    "REWARD_CORE_BREACH",
+    "REWARD_ENEMY_KILLED",
+    "REWARD_TICK_SURVIVED",
+    "TOTAL_CELLS",
+    "WALL",
+    "WALL_HP_DTYPE",
+    "WALL_STATE_DTYPE",
+    "WIDTH",
+    # Grid
+    "GridState",
+    "create_grid_state",
+]
