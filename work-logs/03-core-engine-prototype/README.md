@@ -63,7 +63,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ## 3. Active Work
 
-### Task 3.2: Wall Mechanics 🔄
+### Task 3.2: Wall Mechanics ✅
 
 | Sub-Task | Issue | Status | Description |
 |----------|-------|--------|-------------|

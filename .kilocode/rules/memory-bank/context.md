@@ -42,11 +42,15 @@ This creates natural episode arcs for 15-minute YouTube content.
 
 **Phase:** M03 — Core Engine Prototype
 
-**Active work:** Task 3.1 (Grid State Management), starting with sub-task 3.1.1 (constants and dtypes)
+**Active work:** Task 3.3 (Enemy System), sub-task 3.3.3 (Spawn logic) next
 
 **Completed:**
 - M01: Ideation and Setup — GDR research, GPT-5.2 review, spec consolidation, repo scaffolding
 - M02: GitHub Project Frameout — Labels, milestones, tasks, sub-tasks defined
+- Task 3.1: Grid State Management — GridState dataclass, factory, unit tests
+- Task 3.2: Wall Mechanics — Placement, cooldowns, arming, full test coverage
+- Task 3.3.1: Fixed-slot enemy arrays — EnemyState dataclass, factory
+- Task 3.3.2: Drop movement — `move_enemies()` vectorized half-cell increment
 
 **Next:** After M03 complete, M04 (Gymnasium Integration) sub-tasks will be defined based on learnings.
 
