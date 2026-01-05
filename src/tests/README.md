@@ -4,7 +4,7 @@ title: "Test Suite"
 description: "pytest tests, benchmarks, and determinism checks"
 author: "VintageDon"
 date: "2026-01-04"
-version: "1.0"
+version: "1.1"
 status: "Active"
 tags:
   - type: directory-readme
@@ -26,29 +26,45 @@ pytest-based test suite covering core simulation, environment wrapper, and perfo
 ```
 tests/
 ├── __init__.py           # Package marker
-├── test_grid_state.py    # Grid state management tests
-├── test_enemies.py       # Enemy movement and spawning tests
-├── test_walls.py         # Wall placement and collision tests
-├── test_env.py           # Environment integration tests
-└── README.md             # This file
+├── README.md             # This file
+├── unit/                 # Unit tests (isolated component tests)
+│   ├── __init__.py
+│   ├── test_constants.py # Constants module validation
+│   ├── test_grid.py      # Grid state management (planned)
+│   ├── test_walls.py     # Wall mechanics (planned)
+│   ├── test_enemies.py   # Enemy system (planned)
+│   └── test_collision.py # Collision resolution (planned)
+└── integration/          # Integration tests (cross-component)
+    ├── __init__.py
+    └── test_determinism.py # Seed reproducibility (planned)
 ```
 
 ---
 
-## 2. Files
+## 2. Test Status
+
+### Unit Tests
 
 | File | Description | Status |
 |------|-------------|--------|
-| test_grid_state.py | Grid array operations | 📋 Planned |
-| test_enemies.py | Enemy vectorized operations | 📋 Planned |
-| test_walls.py | Wall mechanics | 📋 Planned |
-| test_env.py | Gymnasium compliance, SPS benchmark, determinism | 📋 Planned |
+| test_constants.py | Constants match design doc | ✅ Complete (41 tests) |
+| test_grid.py | Grid array shapes, dtypes, indexing | 📋 Planned (3.1.3) |
+| test_walls.py | Wall placement, cooldowns, arming | 📋 Planned (3.2.4) |
+| test_enemies.py | Spawn, movement, compaction | 📋 Planned (3.3.5) |
+| test_collision.py | Collision detection, damage stacking | 📋 Planned (3.4.4) |
+
+### Integration Tests
+
+| File | Description | Status |
+|------|-------------|--------|
+| test_determinism.py | Same seed + actions = same trajectory | 📋 Planned (3.5.3) |
+| test_env.py | Gymnasium compliance, SPS benchmark | 📋 Planned (M04) |
 
 ---
 
 ## 3. Success Criteria
 
-From spec §12.3:
+From design doc §12.3:
 
 | Metric | Target |
 |--------|--------|
@@ -65,11 +81,17 @@ From spec §12.3:
 # Run all tests
 pytest src/tests/
 
+# Run unit tests only
+pytest src/tests/unit/
+
+# Run integration tests only
+pytest src/tests/integration/
+
 # Run with coverage
 pytest src/tests/ --cov=src/core --cov=src/env
 
-# Run benchmark only
-pytest src/tests/test_env.py -k benchmark -v
+# Run specific test file
+pytest src/tests/unit/test_constants.py -v
 ```
 
 ---
@@ -79,4 +101,4 @@ pytest src/tests/test_env.py -k benchmark -v
 | Document | Relationship |
 |----------|--------------|
 | [src/](../README.md) | Parent directory |
-| [Grid Defense Spec §12](../../scratch/grid-defense-spec-v2.md) | Success criteria |
+| [Design Document §12](../../docs/design-document.md) | Success criteria |

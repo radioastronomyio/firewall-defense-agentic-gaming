@@ -19,7 +19,8 @@ The specification was developed through multi-model collaboration:
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Spec v2 | `scratch/grid-defense-spec-v2.md` | Authoritative specification |
+| Design Document | `docs/design-document.md` | Authoritative technical specification |
+| Spec v2 | `scratch/grid-defense-spec-v2.md` | Internal working spec |
 | One-pager | `scratch/grid-defense-one-pager.md` | Compact handoff format |
 | GDR Round 1 | `.internal-files/Grid Defense RL Environment Design.md` | Initial research |
 | GDR Round 2 | `.internal-files/Grid Defense RL Implementation Refinement.md` | Refinement pass |
@@ -39,6 +40,18 @@ This creates natural episode arcs for 15-minute YouTube content.
 
 ## Current Status
 
-**Phase:** Prototype (01-ideation-and-setup wrapping up)
+**Phase:** M03 — Core Engine Prototype
 
-**Next milestone:** Implement `GridDefenseEnv` with Drop enemy, verify >10k SPS, pass random agent test.
+**Active work:** Task 3.1 (Grid State Management), starting with sub-task 3.1.1 (constants and dtypes)
+
+**Completed:**
+- M01: Ideation and Setup — GDR research, GPT-5.2 review, spec consolidation, repo scaffolding
+- M02: GitHub Project Frameout — Labels, milestones, tasks, sub-tasks defined
+
+**Next:** After M03 complete, M04 (Gymnasium Integration) sub-tasks will be defined based on learnings.
+
+## Work Tracking
+
+- GitHub Project: https://github.com/radioastronomyio/firewall-defense-agentic-gaming/issues
+- Work logs: `work-logs/` directory with per-phase documentation
+- Rolling horizon: M03 fully decomposed (19 sub-tasks), M04 tasks only, M05+ placeholders

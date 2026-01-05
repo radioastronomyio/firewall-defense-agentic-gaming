@@ -1,66 +1,123 @@
-# Grid Defense RL Tasks
+# Grid Defense RL — Tasks
 
-## Current Phase: Prototype
+Project board: https://github.com/radioastronomyio/firewall-defense-agentic-gaming/issues
 
-### Completed
+Rolling horizon approach: M03 fully decomposed, M04 tasks only, M05+ placeholders.
 
-- [x] GDR Round 1 — Initial research
-- [x] GDR Round 2 — Implementation refinement
-- [x] Multi-model synthesis — GPT-5.2 architecture review
-- [x] Spec v2 — Consolidated specification
-- [x] Repository scaffolding — Directory structure, templates
-- [x] Memory bank — KiloCode context populated
-- [x] Work-log 01 — Ideation and setup documentation
+---
 
-### In Progress
+## M01: Ideation and Setup ✅
 
-- [ ] Prototype implementation
-  - [ ] `src/core/config.py` — Constants
-  - [ ] `src/core/grid_state.py` — State arrays
-  - [ ] `src/core/enemies.py` — Drop enemy
-  - [ ] `src/core/walls.py` — Wall mechanics
-  - [ ] `src/env/grid_defense_env.py` — Gymnasium wrapper
-  - [ ] `src/tests/test_env.py` — SPS benchmark, determinism
+Project inception, multi-model research synthesis, repository scaffolding.
 
-### Prototype Success Criteria
+| Task | Status | Description |
+|------|--------|-------------|
+| 1.1: Ideation and Setup | ✅ Complete | GDR research, GPT-5.2 review, spec v2, repo scaffolding, memory bank |
+
+---
+
+## M02: GitHub Project Frameout ✅
+
+Project board populated, work units defined and assignable.
+
+| Task | Status | Description |
+|------|--------|-------------|
+| 2.1: GitHub Project Frameout | ✅ Complete | Labels, milestones, tasks, sub-tasks created via script |
+
+---
+
+## M03: Core Engine Prototype 🔄
+
+Headless NumPy core: grid arrays, walls, Drop enemy, collision, deterministic step loop.
+
+### Task 3.1: Grid State Management
+
+Implement core grid arrays with correct indexing convention and data types.
+
+| Sub-Task | Status | Description |
+|----------|--------|-------------|
+| 3.1.1: Define constants and array dtypes | 🔄 Active | Create `src/core/constants.py` with grid dimensions, cell states, position constants, cooldown values, and numpy dtype specifications. Single source of truth — no magic numbers elsewhere. |
+| 3.1.2: Initialize grid arrays | ⬜ Pending | Implement `src/core/grid.py` with GridState initialization. Arrays: grid, wall_hp, wall_armed, wall_pending, cell_cd, gcd. All use `[y, x]` indexing, shapes (9, 13). |
+| 3.1.3: Unit tests for array shapes and indexing | ⬜ Pending | `tests/unit/test_grid.py` verifying shapes, dtypes, `[y, x]` indexing, reset behavior. |
+
+### Task 3.2: Wall Mechanics
+
+Implement wall placement, cooldown system, and arming logic.
+
+| Sub-Task | Status | Description |
+|----------|--------|-------------|
+| 3.2.1: Wall placement with validity checks | ⬜ Pending | `src/core/walls.py` placement function. Validity: GCD=0, cell_cd[y,x]=0, grid[y,x]!=WALL. Returns success/failure. |
+| 3.2.2: Cooldown system (GCD + cell cooldowns) | ⬜ Pending | GCD: 10 frames after any action. Cell CD: ~150 frames after wall placed. Decrement each tick. |
+| 3.2.3: Wall arming (pending → armed transition) | ⬜ Pending | 1-tick arming delay (anti-triviality rule). Freshly placed wall does not kill enemy same tick. |
+| 3.2.4: Unit tests for wall lifecycle | ⬜ Pending | `tests/unit/test_walls.py` covering placement, GCD blocking, cell CD blocking, arming delay, HP tracking. |
+
+### Task 3.3: Enemy System
+
+Implement Drop enemy with fixed-slot arrays and half-cell movement.
+
+| Sub-Task | Status | Description |
+|----------|--------|-------------|
+| 3.3.1: Fixed-slot enemy arrays | ⬜ Pending | `src/core/enemies.py` with 20 fixed slots. Arrays: enemy_y_half, enemy_x, enemy_alive, enemy_type, enemy_spawn_tick. Zero-padded, spawn-order sorted. |
+| 3.3.2: Drop movement (half-cell fixed-point) | ⬜ Pending | Movement: `enemy_y_half[alive] += 1` per tick. Cell lookup: `cell_y = enemy_y_half // 2`. No floats. |
+| 3.3.3: Spawn logic | ⬜ Pending | Spawn at y_half=0, random column (0-12). Configurable interval (default 30 ticks). Find first dead slot. |
+| 3.3.4: Array compaction | ⬜ Pending | Remove dead enemies, shift alive to maintain contiguous block, preserve spawn order, zero-pad trailing. |
+| 3.3.5: Unit tests for enemy lifecycle | ⬜ Pending | `tests/unit/test_enemies.py` covering spawn, movement, compaction, MAX_ENEMIES limit, half-cell conversion. |
+
+### Task 3.4: Collision Resolution
+
+Implement vectorized collision detection and resolution.
+
+| Sub-Task | Status | Description |
+|----------|--------|-------------|
+| 3.4.1: Vectorized collision detection | ⬜ Pending | Check all alive enemies against grid in single operation. Only armed walls trigger collision. No Python loops. |
+| 3.4.2: Damage stacking and wall destruction | ⬜ Pending | Multiple enemies on same cell: damage stacks. wall_hp -= count. Wall destroyed at HP ≤ 0. |
+| 3.4.3: Core breach detection | ⬜ Pending | Check `enemy_y_half[alive] >= 16`. Single breach ends episode. |
+| 3.4.4: Unit tests for collision scenarios | ⬜ Pending | `tests/unit/test_collision.py` covering single hit, multi-hit, damage stacking, core breach, unarmed wall no-collision. |
+
+### Task 3.5: Step Loop
+
+Implement deterministic step ordering per design doc Section 9.
+
+| Sub-Task | Status | Description |
+|----------|--------|-------------|
+| 3.5.1: Implement deterministic step ordering | ⬜ Pending | `src/core/simulation.py` with 12-step tick order: decrement CDs → apply action → arm walls → move → collide → breach check → spawn → compact → reward → done → obs → return. |
+| 3.5.2: Seed-based RNG for reproducibility | ⬜ Pending | np.random.Generator per simulation. Seed at reset(). All randomness uses seeded RNG, no global state. |
+| 3.5.3: Integration test for determinism | ⬜ Pending | `tests/integration/test_determinism.py` verifying same seed + same actions = identical trajectory, bit-for-bit. |
+
+---
+
+## M04: Gymnasium Integration ⬜
+
+Environment wrapper, observation space, action masking, random agent validation, >10k SPS.
+
+Sub-tasks to be defined at M03 completion.
+
+| Task | Status | Description |
+|------|--------|-------------|
+| 4.1: Gymnasium Wrapper | ⬜ Pending | GridDefenseEnv class inheriting gymnasium.Env. step(), reset(), render() methods. |
+| 4.2: Observation Space | ⬜ Pending | 667-feature vector with normalization. gymnasium.spaces.Box definition. |
+| 4.3: Action System | ⬜ Pending | Discrete(118): NO-OP + 117 placement. Action mask in info dict for MaskablePPO. |
+| 4.4: Validation | ⬜ Pending | check_env() passes, random agent 1000 episodes, headless SPS > 10,000, determinism verified. |
+
+---
+
+## M05: PPO Training Baseline ⬜
+
+Placeholder — Train MaskablePPO on Drop, validate performance and determinism.
+
+---
+
+## M06: Visualization Layer ⬜
+
+Placeholder — Python Arcade observer, replay from seed+log, saliency overlay.
+
+---
+
+## Success Criteria (M03-M04)
 
 | Metric | Target | Status |
 |--------|--------|--------|
-| Headless SPS | > 10,000 | ⬜ Not started |
-| Gymnasium compliance | `check_env()` passes | ⬜ Not started |
-| Determinism | seed + actions = trajectory | ⬜ Not started |
-| Random agent | 1000 episodes, no crash | ⬜ Not started |
-
-## Phase 1: Drop Training
-
-- [ ] PPO baseline configuration
-- [ ] Training script
-- [ ] Evaluation metrics
-- [ ] Episode recording (seed + actions)
-
-## Phase 2: Curriculum
-
-- [ ] Drifter enemy implementation
-- [ ] Curriculum schedule
-- [ ] Failure recording (trained Drop agent vs Drifter)
-- [ ] Mixed training
-
-## Phase 3: Full Roster
-
-- [ ] Seeker enemy (Dijkstra pathfinding)
-- [ ] Flood enemy (Boids behavior)
-- [ ] Full curriculum
-
-## Phase 4: Visualization
-
-- [ ] Python Arcade observer
-- [ ] Saliency computation
-- [ ] Saliency overlay rendering
-- [ ] Video production pipeline
-
-## Backlog
-
-- [ ] KISS variants (Sprinter, Tank, Splitter, Weaver, Jumper)
-- [ ] Reward shaping (if training flatlines)
-- [ ] LSTM policy exploration
-- [ ] Frame stacking experiments
+| Headless SPS | > 10,000 | ⬜ |
+| Gymnasium compliance | `check_env()` passes | ⬜ |
+| Determinism | seed + actions = trajectory | ⬜ |
+| Random agent | 1000 episodes, no crash | ⬜ |

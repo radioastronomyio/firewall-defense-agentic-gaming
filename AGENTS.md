@@ -9,7 +9,7 @@ Load context from `.kilocode/rules/memory-bank/` before starting work.
 3. `context.md` — Where are we now? (most frequently updated)
 4. `architecture.md` — How is it structured?
 5. `tech.md` — What technologies and constraints?
-6. `tasks.md` — Repetitive workflows (if present)
+6. `tasks.md` — Matches GitHub Project Milestones, tasks, and sub-tasks
 
 ## Key Files
 
