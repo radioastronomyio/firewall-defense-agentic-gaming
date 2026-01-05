@@ -38,7 +38,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 |------|-----------|--------|-------------|
 | 3.1: Grid State Management | 3.1.1-3.1.3 | ✅ Complete | Core arrays, GridState dataclass, factory function |
 | 3.2: Wall Mechanics | 3.2.1-3.2.4 | ✅ Complete | Placement, cooldowns, arming, tests |
-| 3.3: Enemy System | 3.3.1-3.3.5 | 🔄 In Progress | Fixed-slot arrays, movement, spawn, compaction |
+| 3.3: Enemy System | 3.3.1-3.3.5 | ✅ Complete | Fixed-slot arrays, movement, spawn, compaction |
 | 3.4: Collision Resolution | 3.4.1-3.4.4 | ⬜ Pending | Vectorized detection, damage, core breach |
 | 3.5: Step Loop | 3.5.1-3.5.3 | ⬜ Pending | Deterministic ordering, RNG, integration test |
 
@@ -72,7 +72,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | 3.2.3 | #10 | ✅ Complete | Wall arming (pending → armed transition) |
 | 3.2.4 | #11 | ✅ Complete | Unit tests for wall lifecycle |
 
-### Task 3.3: Enemy System 🔄
+### Task 3.3: Enemy System ✅
 
 | Sub-Task | Issue | Status | Description |
 |----------|-------|--------|-------------|
@@ -80,7 +80,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | 3.3.2 | #13 | ✅ Complete | Drop movement (half-cell fixed-point) |
 | 3.3.3 | #15 | ✅ Complete | Spawn logic |
 | 3.3.4 | #16 | ✅ Complete | Array compaction |
-| 3.3.5 | #17 | ⬜ Pending | Unit tests for enemy lifecycle |
+| 3.3.5 | #17 | ✅ Complete | Unit tests for enemy lifecycle |
 
 ---
 
@@ -235,6 +235,27 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ---
 
+### Session 8 — 2026-01-05
+
+**Focus:** Task 3.3.5 (Enemy lifecycle unit tests)
+
+| Activity | Result |
+|----------|--------|
+| 3.3.5: Enemy lifecycle tests | 49 tests covering full enemy lifecycle |
+| Task 3.3 complete | All enemy system functions implemented and tested |
+
+**Test coverage:**
+- `TestEnemyStateFactory` — shapes, dtypes, zero initialization, independence
+- `TestSpawnEnemy` — slot finding, state mutations, capacity limits, determinism
+- `TestMoveEnemies` — vectorized increment, alive-only movement, accumulation
+- `TestCompactEnemies` — stable sort by spawn_tick, zero-padding, alive count
+- `TestHalfCellConversion` — cell lookup formula, boundary crossing
+
+**Artifacts produced:**
+- `tests/unit/test_enemies.py` — comprehensive enemy lifecycle test suite
+
+---
+
 ## 5. Key Technical Decisions
 
 | Decision | Rationale | Reference |
@@ -259,6 +280,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Constant tests | `src/tests/unit/test_constants.py` | 41 tests validating constants |
 | Grid tests | `src/tests/unit/test_grid.py` | 27 tests validating grid state |
 | Wall tests | `tests/unit/test_walls.py` | 43 tests validating wall lifecycle |
+| Enemy tests | `tests/unit/test_enemies.py` | 49 tests validating enemy lifecycle |
 
 ---
 
@@ -268,4 +290,4 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 |--------|--------|---------|
 | Headless SPS | > 10,000 | ⬜ Not measured |
 | Determinism | seed + actions = trajectory | ⬜ Not tested |
-| All M03 tests | Pass | 🔄 ~118 passing |
+| All M03 tests | Pass | 🔄 ~160 passing |
