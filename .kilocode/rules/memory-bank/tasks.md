@@ -49,7 +49,7 @@ Implement wall placement, cooldown system, and arming logic.
 | 3.2.1: Wall placement with validity checks | ✅ Complete | `src/core/walls.py` placement function. Validity: GCD=0, cell_cd[y,x]=0, grid[y,x]!=WALL. Returns success/failure. |
 | 3.2.2: Cooldown system (GCD + cell cooldowns) | ✅ Complete | GCD: 10 frames after any action. Cell CD: ~150 frames after wall placed. Decrement each tick. |
 | 3.2.3: Wall arming (pending → armed transition) | ✅ Complete | 1-tick arming delay (anti-triviality rule). Freshly placed wall does not kill enemy same tick. |
-| 3.2.4: Unit tests for wall lifecycle | ⬜ Pending | `tests/unit/test_walls.py` covering placement, GCD blocking, cell CD blocking, arming delay, HP tracking. |
+| 3.2.4: Unit tests for wall lifecycle | ✅ Complete | `tests/unit/test_walls.py` covering placement, GCD blocking, cell CD blocking, arming delay, HP tracking. |
 
 ### Task 3.3: Enemy System
 
@@ -57,7 +57,7 @@ Implement Drop enemy with fixed-slot arrays and half-cell movement.
 
 | Sub-Task | Status | Description |
 |----------|--------|-------------|
-| 3.3.1: Fixed-slot enemy arrays | ⬜ Pending | `src/core/enemies.py` with 20 fixed slots. Arrays: enemy_y_half, enemy_x, enemy_alive, enemy_type, enemy_spawn_tick. Zero-padded, spawn-order sorted. |
+| 3.3.1: Fixed-slot enemy arrays | ✅ Complete | `src/core/enemies.py` with 20 fixed slots. Arrays: enemy_y_half, enemy_x, enemy_alive, enemy_type, enemy_spawn_tick. Zero-padded, spawn-order sorted. |
 | 3.3.2: Drop movement (half-cell fixed-point) | ⬜ Pending | Movement: `enemy_y_half[alive] += 1` per tick. Cell lookup: `cell_y = enemy_y_half // 2`. No floats. |
 | 3.3.3: Spawn logic | ⬜ Pending | Spawn at y_half=0, random column (0-12). Configurable interval (default 30 ticks). Find first dead slot. |
 | 3.3.4: Array compaction | ⬜ Pending | Remove dead enemies, shift alive to maintain contiguous block, preserve spawn order, zero-pad trailing. |
