@@ -52,7 +52,7 @@ from src.core.constants import (
 )
 from src.core.cooldowns import apply_cooldowns, tick_cooldowns
 from src.core.grid import GridState, create_grid_state
-from src.core.walls import place_wall
+from src.core.walls import arm_pending_walls, place_wall
 
 __all__ = [
     # Cooldowns
@@ -86,5 +86,6 @@ __all__ = [
     "GridState",
     "create_grid_state",
     # Walls
+    "arm_pending_walls",
     "place_wall",
 ]

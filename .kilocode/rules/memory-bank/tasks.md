@@ -47,8 +47,8 @@ Implement wall placement, cooldown system, and arming logic.
 | Sub-Task | Status | Description |
 |----------|--------|-------------|
 | 3.2.1: Wall placement with validity checks | ✅ Complete | `src/core/walls.py` placement function. Validity: GCD=0, cell_cd[y,x]=0, grid[y,x]!=WALL. Returns success/failure. |
-| 3.2.2: Cooldown system (GCD + cell cooldowns) | ⬜ Pending | GCD: 10 frames after any action. Cell CD: ~150 frames after wall placed. Decrement each tick. |
-| 3.2.3: Wall arming (pending → armed transition) | ⬜ Pending | 1-tick arming delay (anti-triviality rule). Freshly placed wall does not kill enemy same tick. |
+| 3.2.2: Cooldown system (GCD + cell cooldowns) | ✅ Complete | GCD: 10 frames after any action. Cell CD: ~150 frames after wall placed. Decrement each tick. |
+| 3.2.3: Wall arming (pending → armed transition) | ✅ Complete | 1-tick arming delay (anti-triviality rule). Freshly placed wall does not kill enemy same tick. |
 | 3.2.4: Unit tests for wall lifecycle | ⬜ Pending | `tests/unit/test_walls.py` covering placement, GCD blocking, cell CD blocking, arming delay, HP tracking. |
 
 ### Task 3.3: Enemy System
