@@ -15,7 +15,7 @@ that runs at >10k steps per second. No rendering, no Gymnasium dependencies.
 Modules:
     constants   - Game constants and dtype specifications
     grid        - Grid state initialization and management
-    walls       - Wall placement and cooldown mechanics (planned)
+    walls       - Wall placement and validity checks
     enemies     - Enemy spawning, movement, and compaction (planned)
     collision   - Vectorized collision detection (planned)
     simulation  - Deterministic step loop (planned)
@@ -51,6 +51,7 @@ from src.core.constants import (
     WIDTH,
 )
 from src.core.grid import GridState, create_grid_state
+from src.core.walls import place_wall
 
 __all__ = [
     # Constants
@@ -80,4 +81,6 @@ __all__ = [
     # Grid
     "GridState",
     "create_grid_state",
+    # Walls
+    "place_wall",
 ]

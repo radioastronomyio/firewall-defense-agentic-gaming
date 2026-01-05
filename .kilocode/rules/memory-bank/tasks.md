@@ -36,9 +36,9 @@ Implement core grid arrays with correct indexing convention and data types.
 
 | Sub-Task | Status | Description |
 |----------|--------|-------------|
-| 3.1.1: Define constants and array dtypes | 🔄 Active | Create `src/core/constants.py` with grid dimensions, cell states, position constants, cooldown values, and numpy dtype specifications. Single source of truth — no magic numbers elsewhere. |
-| 3.1.2: Initialize grid arrays | ⬜ Pending | Implement `src/core/grid.py` with GridState initialization. Arrays: grid, wall_hp, wall_armed, wall_pending, cell_cd, gcd. All use `[y, x]` indexing, shapes (9, 13). |
-| 3.1.3: Unit tests for array shapes and indexing | ⬜ Pending | `tests/unit/test_grid.py` verifying shapes, dtypes, `[y, x]` indexing, reset behavior. |
+| 3.1.1: Define constants and array dtypes | ✅ Complete | Create `src/core/constants.py` with grid dimensions, cell states, position constants, cooldown values, and numpy dtype specifications. Single source of truth — no magic numbers elsewhere. |
+| 3.1.2: Initialize grid arrays | ✅ Complete | Implement `src/core/grid.py` with GridState initialization. Arrays: grid, wall_hp, wall_armed, wall_pending, cell_cd, gcd. All use `[y, x]` indexing, shapes (9, 13). |
+| 3.1.3: Unit tests for array shapes and indexing | ✅ Complete | `tests/unit/test_grid.py` verifying shapes, dtypes, `[y, x]` indexing, reset behavior. |
 
 ### Task 3.2: Wall Mechanics
 
@@ -46,7 +46,7 @@ Implement wall placement, cooldown system, and arming logic.
 
 | Sub-Task | Status | Description |
 |----------|--------|-------------|
-| 3.2.1: Wall placement with validity checks | ⬜ Pending | `src/core/walls.py` placement function. Validity: GCD=0, cell_cd[y,x]=0, grid[y,x]!=WALL. Returns success/failure. |
+| 3.2.1: Wall placement with validity checks | ✅ Complete | `src/core/walls.py` placement function. Validity: GCD=0, cell_cd[y,x]=0, grid[y,x]!=WALL. Returns success/failure. |
 | 3.2.2: Cooldown system (GCD + cell cooldowns) | ⬜ Pending | GCD: 10 frames after any action. Cell CD: ~150 frames after wall placed. Decrement each tick. |
 | 3.2.3: Wall arming (pending → armed transition) | ⬜ Pending | 1-tick arming delay (anti-triviality rule). Freshly placed wall does not kill enemy same tick. |
 | 3.2.4: Unit tests for wall lifecycle | ⬜ Pending | `tests/unit/test_walls.py` covering placement, GCD blocking, cell CD blocking, arming delay, HP tracking. |
