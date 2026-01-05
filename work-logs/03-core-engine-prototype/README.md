@@ -63,7 +63,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ## 3. Active Work
 
-### Task 3.2: Wall Mechanics 🔄
+### Task 3.2: Wall Mechanics ✅
 
 | Sub-Task | Issue | Status | Description |
 |----------|-------|--------|-------------|
@@ -78,9 +78,9 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 |----------|-------|--------|-------------|
 | 3.3.1 | #12 | ✅ Complete | Fixed-slot enemy arrays |
 | 3.3.2 | #13 | ✅ Complete | Drop movement (half-cell fixed-point) |
-| 3.3.3 | #14 | ⬜ Pending | Spawn logic |
-| 3.3.4 | #15 | ⬜ Pending | Array compaction |
-| 3.3.5 | #16 | ⬜ Pending | Unit tests for enemy lifecycle |
+| 3.3.3 | #15 | ✅ Complete | Spawn logic |
+| 3.3.4 | #16 | ⬜ Pending | Array compaction |
+| 3.3.5 | #17 | ⬜ Pending | Unit tests for enemy lifecycle |
 
 ---
 
@@ -190,6 +190,29 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ---
 
+### Session 6 — 2026-01-05
+
+**Focus:** Task 3.3.3 (Spawn logic)
+
+| Activity | Result |
+|----------|--------|
+| 3.3.3: Spawn logic | `spawn_enemy()` — spawns Drop at y_half=0, random column |
+| Export updates | `__init__.py` updated with `spawn_enemy` export |
+| KC issue | KC accidentally deleted `move_enemies()` — restored manually |
+
+**Key implementation details:**
+- Finds first dead slot using `np.argmax(~state.enemy_alive)` (vectorized)
+- Returns `False` if all 20 slots alive (at capacity)
+- Uses seeded `np.random.Generator` for deterministic column selection
+- Sets: `enemy_y_half=0`, `enemy_x=rng.integers(0, WIDTH)`, `enemy_alive=True`, `enemy_type=ENEMY_TYPE_DROP`, `enemy_spawn_tick=current_tick`
+- Spawn interval/timing not implemented here — belongs in step loop (3.5.1)
+
+**Artifacts produced:**
+- `src/core/enemies.py` — added `spawn_enemy()` function
+- `src/core/__init__.py` — updated exports
+
+---
+
 ## 5. Key Technical Decisions
 
 | Decision | Rationale | Reference |
@@ -210,7 +233,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Wall placement | `src/core/walls.py` | `place_wall()`, `arm_pending_walls()` |
 | Cooldown system | `src/core/cooldowns.py` | `apply_cooldowns()`, `tick_cooldowns()` |
 | Core package | `src/core/__init__.py` | Public API exports |
-| Enemy state | `src/core/enemies.py` | EnemyState dataclass, factory, and movement |
+| Enemy state | `src/core/enemies.py` | EnemyState dataclass, factory, movement, spawn |
 | Constant tests | `src/tests/unit/test_constants.py` | 41 tests validating constants |
 | Grid tests | `src/tests/unit/test_grid.py` | 27 tests validating grid state |
 | Wall tests | `tests/unit/test_walls.py` | 43 tests validating wall lifecycle |

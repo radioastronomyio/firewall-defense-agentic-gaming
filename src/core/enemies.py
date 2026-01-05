@@ -52,8 +52,10 @@ from src.core.constants import (
     ENEMY_POS_DTYPE,
     ENEMY_SPEED_HALF,
     ENEMY_TICK_DTYPE,
+    ENEMY_TYPE_DROP,
     ENEMY_TYPE_DTYPE,
     MAX_ENEMIES,
+    WIDTH,
 )
 
 # =============================================================================
@@ -163,6 +165,92 @@ def create_enemy_state() -> EnemyState:
         enemy_type=enemy_type,
         enemy_spawn_tick=enemy_spawn_tick,
     )
+
+
+# =============================================================================
+# Spawn Logic
+# =============================================================================
+
+
+def spawn_enemy(
+    state: EnemyState, current_tick: int, rng: np.random.Generator
+) -> bool:
+    """
+    Spawn a Drop enemy at the top of the grid in a random column.
+
+    Finds the first dead slot (enemy_alive[i] == False) and initializes
+    it with a new Drop enemy. Returns False if all 20 slots are alive.
+
+    This function only spawns a single enemy. Spawn interval/timing logic
+    is handled by the step loop (see simulation.py, task 3.5.1).
+
+    Parameters
+    ----------
+    state : EnemyState
+        Enemy state to mutate in-place. Arrays are modified directly.
+    current_tick : int
+        Current simulation tick for spawn_tick tracking. Used for
+        stable ordering during compaction (task 3.3.4).
+    rng : np.random.Generator
+        Seeded random number generator for reproducibility. Do NOT
+        use np.random global state.
+
+    Returns
+    -------
+    bool
+        True if enemy spawned successfully, False if all slots are alive.
+
+    Notes
+    -----
+    Slot finding uses np.argmax(~state.enemy_alive) which returns the
+    first index where enemy_alive is False. This is equivalent to a
+    linear scan but vectorized. If all slots are alive, argmax returns
+    0, so we verify the slot is actually dead before spawning.
+
+    The spawned enemy is initialized with:
+    - enemy_y_half = 0 (top of grid, half-cell position)
+    - enemy_x = random column 0-12 (using rng.integers)
+    - enemy_alive = True
+    - enemy_type = ENEMY_TYPE_DROP (0)
+    - enemy_spawn_tick = current_tick
+
+    Examples
+    --------
+    >>> state = create_enemy_state()
+    >>> rng = np.random.default_rng(42)
+    >>> spawn_enemy(state, 0, rng)
+    True
+    >>> state.enemy_alive[0]
+    True
+    >>> state.enemy_y_half[0]
+    0
+    >>> state.enemy_x[0]  # Random column from seed 42
+    6
+    >>> # All slots full, spawn fails
+    >>> for i in range(20):
+    ...     spawn_enemy(state, i, rng)
+    True
+    >>> spawn_enemy(state, 20, rng)
+    False
+    """
+    # Find first dead slot using vectorized operation
+    # ~state.enemy_alive gives True for dead slots
+    # argmax returns first True index
+    dead_slots = ~state.enemy_alive
+    slot = np.argmax(dead_slots)
+
+    # Verify slot is actually dead (argmax returns 0 if all False)
+    if not dead_slots[slot]:
+        return False
+
+    # Initialize enemy in the found slot
+    state.enemy_y_half[slot] = 0  # Top of grid
+    state.enemy_x[slot] = rng.integers(0, WIDTH)  # Random column 0-12
+    state.enemy_alive[slot] = True
+    state.enemy_type[slot] = ENEMY_TYPE_DROP
+    state.enemy_spawn_tick[slot] = current_tick
+
+    return True
 
 
 # =============================================================================
