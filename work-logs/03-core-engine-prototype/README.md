@@ -68,8 +68,8 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Sub-Task | Issue | Status | Description |
 |----------|-------|--------|-------------|
 | 3.2.1 | #8 | ✅ Complete | Wall placement with validity checks |
-| 3.2.2 | #9 | ⬜ Pending | Cooldown system (GCD + cell cooldowns) |
-| 3.2.3 | #10 | ⬜ Pending | Wall arming (pending → armed transition) |
+| 3.2.2 | #9 | ✅ Complete | Cooldown system (GCD + cell cooldowns) |
+| 3.2.3 | #10 | ✅ Complete | Wall arming (pending → armed transition) |
 | 3.2.4 | #11 | ⬜ Pending | Unit tests for wall lifecycle |
 
 ---
@@ -96,19 +96,19 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ### Session 2 — 2026-01-05
 
-**Focus:** Task 3.2.1 (Wall placement with validity checks)
+**Focus:** Task 3.2.1–3.2.3 (Wall mechanics implementation)
 
 | Activity | Result |
 |----------|--------|
-| Context review | Reviewed completed 3.1.x work, design doc Sections 5.3-5.4 |
-| Scope clarification | Bounds checking included; cooldown *setting* deferred to 3.2.2; tests deferred to 3.2.4 |
-| KC prompt | Generated for issue #8 |
-| KC execution | `place_wall()` implemented with all validity checks |
-| Code review | Passed — docstrings comprehensive, no additional comments needed |
+| 3.2.1: Wall placement | `place_wall()` with bounds, GCD, cell_cd, occupancy checks |
+| 3.2.2: Cooldown system | `apply_cooldowns()` and `tick_cooldowns()` — vectorized, no Python loops |
+| 3.2.3: Wall arming | `arm_pending_walls()` — vectorized pending → armed transition |
+| Code review | All three passed — docstrings comprehensive, dual-audience standard met |
 
 **Artifacts produced:**
-- `src/core/walls.py` — `place_wall(state, y, x) -> bool` with bounds, GCD, cell_cd, occupancy checks
-- `src/core/__init__.py` — updated exports
+- `src/core/walls.py` — `place_wall()`, `arm_pending_walls()`
+- `src/core/cooldowns.py` — `apply_cooldowns()`, `tick_cooldowns()`
+- `src/core/__init__.py` — updated exports for all new functions
 
 ---
 
@@ -129,7 +129,8 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 |----------|----------|-------------|
 | Constants | `src/core/constants.py` | All game constants, single source of truth |
 | Grid state | `src/core/grid.py` | GridState dataclass and factory |
-| Wall placement | `src/core/walls.py` | `place_wall()` with validity checks |
+| Wall placement | `src/core/walls.py` | `place_wall()`, `arm_pending_walls()` |
+| Cooldown system | `src/core/cooldowns.py` | `apply_cooldowns()`, `tick_cooldowns()` |
 | Core package | `src/core/__init__.py` | Public API exports |
 | Constant tests | `src/tests/unit/test_constants.py` | 41 tests validating constants |
 | Grid tests | `src/tests/unit/test_grid.py` | 27 tests validating grid state |

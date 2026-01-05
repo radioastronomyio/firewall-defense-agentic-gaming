@@ -140,3 +140,73 @@ def place_wall(state: GridState, y: int, x: int) -> bool:
     state.wall_armed[y, x] = False
 
     return True
+
+
+# =============================================================================
+# Wall Arming
+# =============================================================================
+
+
+def arm_pending_walls(state: GridState) -> None:
+    """
+    Transition all pending walls to armed status.
+
+    This function implements the 1-tick arming delay (anti-triviality rule).
+    Walls placed on the previous tick have wall_pending=True and wall_armed=False.
+    On the next tick, this function arms them so they can kill enemies.
+
+    Arming Logic
+    ------------
+    - All pending walls (wall_pending=True) become armed (wall_armed=True)
+    - Pending status is cleared after arming (wall_pending=False)
+    - Only armed walls cause collision damage (handled by collision module)
+
+    The vectorized operation uses NumPy's boolean OR to arm all pending walls
+    simultaneously, then clears the pending flags. This is called once per tick
+    in the step loop (step 3 in Section 9 of the design document).
+
+    Parameters
+    ----------
+    state : GridState
+        Current grid state to modify. Mutated in-place.
+
+    Returns
+    -------
+    None
+        This function mutates state in-place and returns nothing.
+
+    Notes
+    -----
+    - Vectorized operation: no Python loops over cells
+    - Safe to call when no walls are pending (no-op, no errors)
+    - Must be called once per tick in the step loop after action application
+    - Order in step loop: decrement CDs → apply action → arm walls → move → collide
+
+    Examples
+    --------
+    >>> from src.core.grid import create_grid_state
+    >>> from src.core.walls import place_wall, arm_pending_walls
+    >>> state = create_grid_state()
+    >>> place_wall(state, 4, 6)
+    True
+    >>> state.wall_pending[4, 6], state.wall_armed[4, 6]
+    (True, False)
+    >>> arm_pending_walls(state)
+    >>> state.wall_pending[4, 6], state.wall_armed[4, 6]
+    (False, True)
+    >>> # Multiple pending walls armed in single operation
+    >>> place_wall(state, 3, 5)
+    True
+    >>> place_wall(state, 5, 7)
+    True
+    >>> arm_pending_walls(state)
+    >>> state.wall_armed[3, 5], state.wall_armed[5, 7]
+    (True, True)
+    >>> state.wall_pending[3, 5], state.wall_pending[5, 7]
+    (False, False)
+    """
+    # Arm all pending walls (vectorized boolean OR)
+    state.wall_armed = state.wall_armed | state.wall_pending
+
+    # Clear pending status after arming (vectorized assignment)
+    state.wall_pending[:] = False
