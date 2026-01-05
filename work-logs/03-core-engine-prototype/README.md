@@ -77,7 +77,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Sub-Task | Issue | Status | Description |
 |----------|-------|--------|-------------|
 | 3.3.1 | #12 | ✅ Complete | Fixed-slot enemy arrays |
-| 3.3.2 | #13 | ⬜ Pending | Drop movement (half-cell fixed-point) |
+| 3.3.2 | #13 | ✅ Complete | Drop movement (half-cell fixed-point) |
 | 3.3.3 | #14 | ⬜ Pending | Spawn logic |
 | 3.3.4 | #15 | ⬜ Pending | Array compaction |
 | 3.3.5 | #16 | ⬜ Pending | Unit tests for enemy lifecycle |
@@ -169,6 +169,27 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ---
 
+### Session 5 — 2026-01-05
+
+**Focus:** Task 3.3.2 (Drop movement)
+
+| Activity | Result |
+|----------|--------|
+| 3.3.2: Drop movement | `move_enemies()` — vectorized half-cell increment |
+| Export updates | `__init__.py` updated with `move_enemies` export |
+
+**Key implementation details:**
+- Single vectorized operation: `state.enemy_y_half[state.enemy_alive] += ENEMY_SPEED_HALF`
+- In-place mutation for performance (no array copying)
+- No bounds checking here — core breach detection handled in collision module (3.4.3)
+- Cell lookup via integer division: `cell_y = enemy_y_half // 2`
+
+**Artifacts produced:**
+- `src/core/enemies.py` — added `move_enemies()` function
+- `src/core/__init__.py` — updated exports
+
+---
+
 ## 5. Key Technical Decisions
 
 | Decision | Rationale | Reference |
@@ -189,7 +210,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Wall placement | `src/core/walls.py` | `place_wall()`, `arm_pending_walls()` |
 | Cooldown system | `src/core/cooldowns.py` | `apply_cooldowns()`, `tick_cooldowns()` |
 | Core package | `src/core/__init__.py` | Public API exports |
-| Enemy state | `src/core/enemies.py` | EnemyState dataclass and factory |
+| Enemy state | `src/core/enemies.py` | EnemyState dataclass, factory, and movement |
 | Constant tests | `src/tests/unit/test_constants.py` | 41 tests validating constants |
 | Grid tests | `src/tests/unit/test_grid.py` | 27 tests validating grid state |
 | Wall tests | `tests/unit/test_walls.py` | 43 tests validating wall lifecycle |
