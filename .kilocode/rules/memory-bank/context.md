@@ -1,0 +1,44 @@
+# Grid Defense RL Context
+
+## Project Origin
+
+This project emerged from exploring the intersection of gaming, RL, and xAI for YouTube educational content. Initial research via Gemini Deep Research (GDR) explored a "packet filter defense" concept, which evolved into a grid-based tower defense where the cybersecurity framing is thematic wrapper, not the point.
+
+## Multi-Model Synthesis
+
+The specification was developed through multi-model collaboration:
+
+| Model | Contribution |
+|-------|--------------|
+| **GDR Round 1** | Initial research: 13×9 grid (PPO horizon math), hybrid cooldown model, vector perturbation saliency |
+| **GPT-5.2 Review 1** | Architecture validation: added NO-OP action, 1-tick wall arming rule |
+| **GPT-5.2 Review 2** | Implementation fixes: `[y,x]` indexing, fixed-point positions, fixed enemy slots |
+| **Claude** | Orchestration, spec synthesis, prompt engineering |
+
+## Key Documents
+
+| Document | Location | Purpose |
+|----------|----------|---------|
+| Spec v2 | `scratch/grid-defense-spec-v2.md` | Authoritative specification |
+| One-pager | `scratch/grid-defense-one-pager.md` | Compact handoff format |
+| GDR Round 1 | `.internal-files/Grid Defense RL Environment Design.md` | Initial research |
+| GDR Round 2 | `.internal-files/Grid Defense RL Implementation Refinement.md` | Refinement pass |
+
+## Content Philosophy
+
+The educational hook is **"watch an agent break, then adapt"**:
+
+1. Train agent on Drop enemy (down-only movement)
+2. Introduce Drifter (down + lateral)
+3. Watch agent fail spectacularly
+4. Saliency shows agent "looking in wrong place"
+5. Retrain on mixed enemies
+6. Saliency shifts—agent now tracks lateral movement
+
+This creates natural episode arcs for 15-minute YouTube content.
+
+## Current Status
+
+**Phase:** Prototype (01-ideation-and-setup wrapping up)
+
+**Next milestone:** Implement `GridDefenseEnv` with Drop enemy, verify >10k SPS, pass random agent test.
