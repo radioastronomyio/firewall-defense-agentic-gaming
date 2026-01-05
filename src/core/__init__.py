@@ -51,7 +51,7 @@ from src.core.constants import (
     WIDTH,
 )
 from src.core.cooldowns import apply_cooldowns, tick_cooldowns
-from src.core.enemies import EnemyState, create_enemy_state
+from src.core.enemies import EnemyState, create_enemy_state, move_enemies
 from src.core.grid import GridState, create_grid_state
 from src.core.walls import arm_pending_walls, place_wall
 
@@ -86,6 +86,7 @@ __all__ = [
     # Enemies
     "EnemyState",
     "create_enemy_state",
+    "move_enemies",
     # Grid
     "GridState",
     "create_grid_state",
