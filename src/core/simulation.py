@@ -21,8 +21,8 @@ that never varies, ensuring reproducibility for training and testing.
 Step Ordering (Section 9)
 -------------------------
 1. tick_cooldowns() - Decrement GCD and cell cooldowns
-2. Apply action - Place wall if action != NO_OP and GCD was 0
-3. arm_pending_walls() - Pending → armed transition
+2. arm_pending_walls() - Pending → armed transition
+3. Apply action - Place wall if action != NO_OP and GCD was 0
 4. move_enemies() - All alive enemies advance
 5. detect_collisions() + resolve_collisions() - Wall damage, enemy death
 6. detect_core_breach() - Check termination condition
@@ -245,8 +245,8 @@ def step(
     Step Ordering (Section 9)
     -------------------------
     1. tick_cooldowns() - Decrement GCD and cell cooldowns
-    2. Apply action - Place wall if action != NO_OP and GCD was 0
-    3. arm_pending_walls() - Pending → armed transition
+    2. arm_pending_walls() - Pending → armed transition
+    3. Apply action - Place wall if action != NO_OP and GCD was 0
     4. move_enemies() - All alive enemies advance
     5. detect_collisions() + resolve_collisions() - Wall damage, enemy death
     6. detect_core_breach() - Check termination condition
@@ -347,7 +347,16 @@ def step(
     tick_cooldowns(sim_state.grid_state)
 
     # =============================================================================
-    # Step 2: Apply action (if valid)
+    # Step 2: Arm pending walls
+    # =============================================================================
+    # Transition walls from pending state to armed state
+    # This implements the 1-tick arming delay (anti-triviality rule)
+    # Newly placed walls remain pending during the same tick they're placed
+    # Only walls from the previous tick are armed
+    arm_pending_walls(sim_state.grid_state)
+
+    # =============================================================================
+    # Step 3: Apply action (if valid)
     # =============================================================================
     # Check if action is NO-OP or if GCD was 0 before this tick
     # Note: GCD was decremented in Step 1, so we check if it's now 0
@@ -367,14 +376,6 @@ def step(
         # apply_cooldowns() sets GCD and cell cooldown for the placed wall
         if placement_success:
             apply_cooldowns(sim_state.grid_state, y, x)
-
-    # =============================================================================
-    # Step 3: Arm pending walls
-    # =============================================================================
-    # Transition walls from pending state to armed state
-    # This implements the 1-tick arming delay (anti-triviality rule)
-    # Freshly placed walls do NOT kill enemies on the same tick they're placed
-    arm_pending_walls(sim_state.grid_state)
 
     # =============================================================================
     # Step 4: Move enemies
@@ -409,7 +410,7 @@ def step(
     # Spawn enemy if current tick is divisible by spawn_interval
     # Spawn timing: tick % spawn_interval == 0 (e.g., every 30 ticks)
     # First spawn happens at tick 0 (immediately after reset)
-    if sim_state.tick % sim_state.spawn_interval == 0:
+    if sim_state.spawn_interval > 0 and sim_state.tick % sim_state.spawn_interval == 0:
         spawn_enemy(sim_state.enemy_state, sim_state.tick, rng)
 
     # =============================================================================
