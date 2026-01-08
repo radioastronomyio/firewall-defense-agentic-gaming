@@ -134,7 +134,7 @@ class SimulationState:
     Examples
     --------
     >>> from src.core import create_simulation_state
-    >>> sim = create_simulation_state(spawn_interval=30)
+    >>> sim = create_simulation_state(spawn_interval=30, seed=42)
     >>> sim.tick
     0
     >>> sim.spawn_interval
@@ -144,7 +144,7 @@ class SimulationState:
     >>> sim.enemy_state.enemy_y_half.shape
     (20,)
     >>> sim.rng.integers(0, 13)  # Random spawn column
-    7
+    10
     """
 
     grid_state: GridState
