@@ -43,16 +43,12 @@ This module implements the core simulation loop but does NOT include:
 Usage
 -----
     from src.core import create_simulation_state
-    import numpy as np
 
-    # Create simulation with default spawn interval
-    sim_state = create_simulation_state()
-
-    # Create seeded RNG for determinism
-    rng = np.random.default_rng(seed=42)
+    # Create seeded simulation for determinism
+    sim_state = create_simulation_state(seed=42)
 
     # Execute one tick with action 0 (NO-OP)
-    reward, terminated, truncated = step(sim_state, action=0, rng=rng)
+    reward, terminated, truncated = step(sim_state, action=0)
 """
 
 # =============================================================================
@@ -63,6 +59,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from src.core.collision import detect_collisions, detect_core_breach, resolve_collisions
 from src.core.constants import (
     DEFAULT_SPAWN_INTERVAL,
     MAX_EPISODE_TICKS,
@@ -80,7 +77,6 @@ from src.core.enemies import (
     move_enemies,
     spawn_enemy,
 )
-from src.core.collision import detect_collisions, detect_core_breach, resolve_collisions
 from src.core.grid import GridState, create_grid_state
 from src.core.walls import arm_pending_walls, place_wall
 
@@ -106,6 +102,7 @@ class SimulationState:
     - Enemy state: Contains fixed-slot enemy arrays with positions and status
     - tick: Current simulation tick (0-indexed, increments each step)
     - spawn_interval: Ticks between enemy spawns (default 30 ≈ 1 second)
+    - rng: Seeded random number generator for deterministic randomness
 
     Parameters
     ----------
@@ -121,6 +118,10 @@ class SimulationState:
     spawn_interval : int
         Number of ticks between enemy spawns. Enemies spawn when
         tick % spawn_interval == 0. Default is 30 ticks (~1 second at 30 tps).
+    rng : np.random.Generator
+        Seeded random number generator for enemy spawn column selection and
+        any other randomization. Must be seeded at episode start for
+        determinism. Uses np.random.default_rng(seed) for modern NumPy RNG.
 
     Notes
     -----
@@ -128,11 +129,12 @@ class SimulationState:
     - All mutations happen in-place (no copying for performance)
     - Factory function create_simulation_state() initializes all fields
     - tick is incremented at end of step() (not beginning)
+    - RNG is encapsulated in SimulationState for reproducibility
 
     Examples
     --------
     >>> from src.core import create_simulation_state
-    >>> sim = create_simulation_state(spawn_interval=30)
+    >>> sim = create_simulation_state(spawn_interval=30, seed=42)
     >>> sim.tick
     0
     >>> sim.spawn_interval
@@ -141,12 +143,15 @@ class SimulationState:
     (9, 13)
     >>> sim.enemy_state.enemy_y_half.shape
     (20,)
+    >>> sim.rng.integers(0, 13)  # Random spawn column
+    10
     """
 
     grid_state: GridState
     enemy_state: EnemyState
     tick: int
     spawn_interval: int
+    rng: np.random.Generator
 
 
 # =============================================================================
@@ -154,7 +159,10 @@ class SimulationState:
 # =============================================================================
 
 
-def create_simulation_state(spawn_interval: int = DEFAULT_SPAWN_INTERVAL) -> SimulationState:
+def create_simulation_state(
+    spawn_interval: int = DEFAULT_SPAWN_INTERVAL,
+    seed: int | None = None,
+) -> SimulationState:
     """
     Create a new simulation state with initialized grid and enemies.
 
@@ -172,6 +180,8 @@ def create_simulation_state(spawn_interval: int = DEFAULT_SPAWN_INTERVAL) -> Sim
     - Tick initialization: Starts at 0, increments each step
     - Spawn interval: Configurable for curriculum learning (e.g., faster
       spawns in advanced episodes)
+    - RNG initialization: np.random.default_rng(seed) creates seeded
+      generator for deterministic randomness
 
     Parameters
     ----------
@@ -179,12 +189,17 @@ def create_simulation_state(spawn_interval: int = DEFAULT_SPAWN_INTERVAL) -> Sim
         Number of ticks between enemy spawns. Default is DEFAULT_SPAWN_INTERVAL
         (30 ticks ≈ 1 second at 30 tps). Enemies spawn when
         tick % spawn_interval == 0. Must be positive integer.
+    seed : int or None, optional
+        Random seed for reproducibility. If None, uses system entropy
+        (non-deterministic). If int, creates deterministic RNG for
+        reproducible episodes. Default is None.
 
     Returns
     -------
     SimulationState
         New simulation state with initialized grid, enemies, and metadata.
         All arrays are fresh copies (no shared references with previous states).
+        RNG is seeded with provided seed (or None for non-deterministic).
 
     Notes
     -----
@@ -192,6 +207,8 @@ def create_simulation_state(spawn_interval: int = DEFAULT_SPAWN_INTERVAL) -> Sim
     - Spawn interval can be varied for curriculum learning
     - No enemies are present at initialization (first spawn at tick=0)
     - Grid is completely empty (no walls, no cooldowns)
+    - RNG is encapsulated in SimulationState for reproducibility
+    - Same seed + same actions = identical trajectory (determinism)
 
     Examples
     --------
@@ -209,15 +226,24 @@ def create_simulation_state(spawn_interval: int = DEFAULT_SPAWN_INTERVAL) -> Sim
     >>> sim_fast = create_simulation_state(spawn_interval=15)
     >>> sim_fast.spawn_interval
     15
+    >>> # Seeded simulation for reproducibility
+    >>> sim_seeded = create_simulation_state(seed=42)
+    >>> col1 = sim_seeded.rng.integers(0, 13)
+    >>> sim_seeded2 = create_simulation_state(seed=42)
+    >>> col2 = sim_seeded2.rng.integers(0, 13)
+    >>> col1 == col2  # Same seed produces same sequence
+    True
     """
     grid_state = create_grid_state()
     enemy_state = create_enemy_state()
+    rng = np.random.default_rng(seed)
 
     return SimulationState(
         grid_state=grid_state,
         enemy_state=enemy_state,
         tick=0,
         spawn_interval=spawn_interval,
+        rng=rng,
     )
 
 
@@ -229,7 +255,6 @@ def create_simulation_state(spawn_interval: int = DEFAULT_SPAWN_INTERVAL) -> Sim
 def step(
     sim_state: SimulationState,
     action: int,
-    rng: np.random.Generator,
 ) -> tuple[float, bool, bool]:
     """
     Execute one simulation tick with deterministic step ordering.
@@ -266,19 +291,17 @@ def step(
     - Cooldown tracking: GCD checked before action, applied after placement
     - Reward structure: Binary rewards (no shaping) per Section 8
     - Termination conditions: Core breach (terminated) or max ticks (truncated)
+    - RNG encapsulation: Uses sim_state.rng (seeded at creation)
 
     Parameters
     ----------
     sim_state : SimulationState
-        Current simulation state containing grid, enemies, and metadata.
+        Current simulation state containing grid, enemies, metadata, and RNG.
         Mutated in-place during step execution.
     action : int
         Action to execute this tick. Action 0 = NO-OP (always valid).
         Actions 1-117 = Place wall at cell (x, y) where y, x = divmod(action-1, 13).
         Placement only succeeds if GCD was 0 before this tick.
-    rng : np.random.Generator
-        Seeded random number generator for enemy spawn column selection.
-        Must be seeded at episode start for determinism.
 
     Returns
     -------
@@ -296,18 +319,18 @@ def step(
     - Core breach immediately terminates episode with negative reward
     - Truncation occurs at MAX_EPISODE_TICKS (1000 ticks)
     - Spawn timing: tick % spawn_interval == 0 (spawn at tick 0, 30, 60, ...)
-    - Enemy spawn column is random but deterministic via seeded RNG
+    - Enemy spawn column is random but deterministic via sim_state.rng
     - Dead enemies are compacted to maintain contiguous alive block
     - Wall placement fails silently if GCD > 0 or cell invalid
+    - RNG is encapsulated in SimulationState for reproducibility
 
     Examples
     --------
     >>> from src.core import create_simulation_state
-    >>> import numpy as np
-    >>> sim = create_simulation_state()
-    >>> rng = np.random.default_rng(seed=42)
+    >>> # Create seeded simulation for reproducibility
+    >>> sim = create_simulation_state(seed=42)
     >>> # Execute NO-OP action
-    >>> reward, terminated, truncated = step(sim, action=0, rng=rng)
+    >>> reward, terminated, truncated = step(sim, action=0)
     >>> reward  # Survival reward + first enemy spawn
     0.0
     >>> terminated
@@ -318,24 +341,24 @@ def step(
     1
     >>> # Place wall at cell (4, 6) = action 4*13 + 6 + 1 = 59
     >>> sim.grid_state.gcd = 0  # Reset GCD to allow placement
-    >>> reward, terminated, truncated = step(sim, action=59, rng=rng)
+    >>> reward, terminated, truncated = step(sim, action=59)
     >>> sim.grid_state.grid[4, 6]  # Wall placed
     1
     >>> sim.grid_state.gcd  # GCD applied after placement
     10
     >>> # Core breach scenario
-    >>> sim2 = create_simulation_state()
+    >>> sim2 = create_simulation_state(seed=42)
     >>> sim2.enemy_state.enemy_alive[0] = True
     >>> sim2.enemy_state.enemy_y_half[0] = 16  # At breach threshold
-    >>> reward, terminated, truncated = step(sim2, action=0, rng=rng)
+    >>> reward, terminated, truncated = step(sim2, action=0)
     >>> terminated
     True
     >>> reward
     -1.0
     >>> # Episode truncation
-    >>> sim3 = create_simulation_state()
+    >>> sim3 = create_simulation_state(seed=42)
     >>> sim3.tick = MAX_EPISODE_TICKS
-    >>> reward, terminated, truncated = step(sim3, action=0, rng=rng)
+    >>> reward, terminated, truncated = step(sim3, action=0)
     >>> truncated
     True
     """
@@ -411,7 +434,7 @@ def step(
     # Spawn timing: tick % spawn_interval == 0 (e.g., every 30 ticks)
     # First spawn happens at tick 0 (immediately after reset)
     if sim_state.spawn_interval > 0 and sim_state.tick % sim_state.spawn_interval == 0:
-        spawn_enemy(sim_state.enemy_state, sim_state.tick, rng)
+        spawn_enemy(sim_state.enemy_state, sim_state.tick, sim_state.rng)
 
     # =============================================================================
     # Step 8: Compact enemies
