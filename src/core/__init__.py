@@ -17,8 +17,8 @@ Modules:
     grid        - Grid state initialization and management
     walls       - Wall placement and validity checks
     enemies     - Enemy spawning, movement, and compaction
-    collision   - Vectorized collision detection (planned)
-    simulation  - Deterministic step loop (planned)
+    collision   - Vectorized collision detection
+    simulation  - Deterministic step loop
 """
 
 # =============================================================================
@@ -60,6 +60,7 @@ from src.core.enemies import (
     spawn_enemy,
 )
 from src.core.grid import GridState, create_grid_state
+from src.core.simulation import SimulationState, create_simulation_state, step
 from src.core.walls import arm_pending_walls, place_wall
 
 __all__ = [
@@ -106,4 +107,8 @@ __all__ = [
     # Walls
     "arm_pending_walls",
     "place_wall",
+    # Simulation
+    "SimulationState",
+    "create_simulation_state",
+    "step",
 ]
