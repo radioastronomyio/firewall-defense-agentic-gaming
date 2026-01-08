@@ -409,7 +409,7 @@ def step(
     # Spawn enemy if current tick is divisible by spawn_interval
     # Spawn timing: tick % spawn_interval == 0 (e.g., every 30 ticks)
     # First spawn happens at tick 0 (immediately after reset)
-    if sim_state.tick % sim_state.spawn_interval == 0:
+    if sim_state.spawn_interval > 0 and sim_state.tick % sim_state.spawn_interval == 0:
         spawn_enemy(sim_state.enemy_state, sim_state.tick, rng)
 
     # =============================================================================
