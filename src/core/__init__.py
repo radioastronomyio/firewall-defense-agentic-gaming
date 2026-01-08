@@ -25,7 +25,7 @@ Modules:
 # Public API
 # =============================================================================
 
-from src.core.collision import detect_collisions
+from src.core.collision import detect_collisions, resolve_collisions
 from src.core.constants import (
     CELL_CD_FRAMES,
     COOLDOWN_DTYPE,
@@ -65,6 +65,7 @@ from src.core.walls import arm_pending_walls, place_wall
 __all__ = [
     # Collision
     "detect_collisions",
+    "resolve_collisions",
     # Cooldowns
     "apply_cooldowns",
     "tick_cooldowns",

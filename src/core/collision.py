@@ -9,10 +9,10 @@ Link         : https://github.com/radioastronomyio/firewall-defense-agentic-gami
 
 Description
 -----------
-Vectorized collision detection for identifying which alive enemies occupy cells
-with armed walls. This module implements the first step of collision resolution:
-detecting collisions only. Damage application, wall destruction, and enemy death
-marking are handled by subsequent functions in the collision module.
+Vectorized collision detection and resolution for enemies and walls. This module
+implements the complete collision pipeline:
+1. detect_collisions() - Identify which enemies occupy cells with armed walls
+2. resolve_collisions() - Apply damage, destroy walls, mark enemies dead
 
 The detection uses advanced NumPy indexing to check all enemy positions against
 the wall_armed grid in a single vectorized operation. No Python loops over
@@ -34,9 +34,8 @@ Collision Rules (Section 6.2)
 
 Note
 ----
-This module only detects collisions. Damage stacking, wall destruction, and
-enemy death marking are handled by separate functions in the collision module
-(Tasks 3.4.2-3.4.3).
+Core breach detection (enemies reaching bottom row) is handled separately
+in Task 3.4.3. This module focuses on wall-enemy collisions only.
 
 Usage
 -----
@@ -67,6 +66,7 @@ Usage
 
 import numpy as np
 
+from src.core.constants import EMPTY
 from src.core.enemies import EnemyState
 from src.core.grid import GridState
 
@@ -188,3 +188,202 @@ def detect_collisions(grid_state: GridState, enemy_state: EnemyState) -> np.ndar
     collisions = on_armed_wall & enemy_state.enemy_alive
 
     return collisions
+
+
+# =============================================================================
+# Collision Resolution
+# =============================================================================
+
+
+def resolve_collisions(
+    grid_state: GridState,
+    enemy_state: EnemyState,
+    collisions: np.ndarray,
+) -> tuple[int, int]:
+    """
+    Resolve collision damage, wall destruction, and enemy death.
+
+    This function applies damage from colliding enemies to walls, destroys
+    walls when HP reaches zero, and marks colliding enemies as dead. Damage
+    stacks cumulatively when multiple enemies collide with the same wall cell.
+
+    The resolution uses vectorized NumPy operations to count damage per cell
+    and apply wall destruction in a single pass, ensuring performance for
+    training at >10k SPS.
+
+    Damage Stacking Logic
+    ---------------------
+    - Multiple enemies on same cell deal cumulative damage
+    - Vectorized counting: np.add.at() counts enemies per (cell_y, x) pair
+    - Cell lookup: cell_y = enemy_y_half // 2
+    - Example: 3 enemies on same wall cell = 3 damage to that wall
+
+    Wall Destruction
+    ----------------
+    - wall_hp[y, x] -= damage_count (applied cumulatively)
+    - When wall_hp[y, x] <= 0:
+        - grid[y, x] = EMPTY
+        - wall_hp[y, x] = 0
+        - wall_armed[y, x] = False
+        - wall_pending[y, x] = False
+    - Only walls with HP <= 0 are destroyed
+
+    Enemy Death
+    -----------
+    - All enemies marked True in collisions array: enemy_alive[collisions] = False
+    - This is a vectorized boolean assignment
+
+    Technical Details
+    -----------------
+    - Vectorized damage counting: np.add.at() accumulates damage per cell
+    - Vectorized wall destruction: boolean indexing finds walls to destroy
+    - Vectorized enemy death: boolean indexing marks colliding enemies dead
+    - In-place mutation: All state arrays modified directly
+    - No Python loops over enemies or cells
+
+    Parameters
+    ----------
+    grid_state : GridState
+        Current grid state containing wall arrays. Mutated in-place.
+        grid: Cell contents (0=empty, 1=wall)
+        wall_hp: Wall health points (uint8)
+        wall_armed: Armed status (bool)
+        wall_pending: Pending status (bool)
+    enemy_state : EnemyState
+        Current enemy state containing positions and alive mask. Mutated in-place.
+        enemy_y_half: Half-cell y positions (int16, shape 20)
+        enemy_x: Cell x positions (int16, shape 20)
+        enemy_alive: Active mask (bool, shape 20)
+    collisions : np.ndarray
+        Boolean array with shape (MAX_ENEMIES,) = (20,). True at index i
+        means enemy i collides with an armed wall. Output from detect_collisions().
+
+    Returns
+    -------
+    tuple[int, int]
+        (enemies_killed, walls_destroyed) for reward calculation.
+        - enemies_killed: Number of enemies marked dead (sum of collisions)
+        - walls_destroyed: Number of walls destroyed (HP <= 0 after damage)
+
+    Notes
+    -----
+    - Damage is applied cumulatively: 3 enemies on same wall = 3 damage
+    - Walls with HP > 0 after damage remain intact
+    - Dead enemies cannot collide (enforced by detect_collisions())
+    - Only armed walls can be damaged (enforced by detect_collisions())
+    - Core breach detection is handled separately (Task 3.4.3)
+
+    Examples
+    --------
+    >>> from src.core.grid import create_grid_state
+    >>> from src.core.enemies import create_enemy_state
+    >>> from src.core.collision import detect_collisions, resolve_collisions
+    >>> grid = create_grid_state()
+    >>> enemies = create_enemy_state()
+    >>> # Place and arm a wall at (4, 6)
+    >>> grid.grid[4, 6] = 1
+    >>> grid.wall_armed[4, 6] = True
+    >>> grid.wall_hp[4, 6] = 2
+    >>> # Spawn 3 enemies at (4, 6)
+    >>> enemies.enemy_alive[0:3] = True
+    >>> enemies.enemy_y_half[0:3] = 8  # cell 4
+    >>> enemies.enemy_x[0:3] = 6
+    >>> # Detect and resolve collisions
+    >>> collisions = detect_collisions(grid, enemies)
+    >>> enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+    >>> enemies_killed
+    3
+    >>> walls_destroyed
+    1
+    >>> grid.wall_hp[4, 6]  # Wall destroyed, HP clamped to 0
+    0
+    >>> grid.grid[4, 6]  # Wall removed
+    0
+    >>> grid.wall_armed[4, 6]
+    False
+    >>> # Another wall with higher HP
+    >>> grid2 = create_grid_state()
+    >>> enemies2 = create_enemy_state()
+    >>> grid2.grid[3, 5] = 1
+    >>> grid2.wall_armed[3, 5] = True
+    >>> grid2.wall_hp[3, 5] = 3  # HP=3, can survive 2 hits
+    >>> enemies2.enemy_alive[0:2] = True  # 2 enemies
+    >>> enemies2.enemy_y_half[0:2] = 6  # cell 3
+    >>> enemies2.enemy_x[0:2] = 5
+    >>> collisions2 = detect_collisions(grid2, enemies2)
+    >>> enemies_killed, walls_destroyed = resolve_collisions(grid2, enemies2, collisions2)
+    >>> enemies_killed
+    2
+    >>> walls_destroyed  # Wall survives with HP=1
+    0
+    >>> grid2.wall_hp[3, 5]  # 3 - 2 = 1
+    1
+    >>> # No collisions = no changes
+    >>> grid3 = create_grid_state()
+    >>> enemies3 = create_enemy_state()
+    >>> collisions3 = detect_collisions(grid3, enemies3)
+    >>> enemies_killed, walls_destroyed = resolve_collisions(grid3, enemies3, collisions3)
+    >>> enemies_killed, walls_destroyed
+    (0, 0)
+    """
+    # Mark all colliding enemies as dead (vectorized boolean assignment)
+    # This is a simple in-place operation: set enemy_alive to False where
+    # collisions is True
+    enemy_state.enemy_alive[collisions] = False
+
+    # Count enemies killed (sum of collisions boolean array)
+    # This is the number of enemies marked dead above
+    enemies_killed = int(np.sum(collisions))
+
+    # If no enemies collided, no damage to apply
+    if enemies_killed == 0:
+        return 0, 0
+
+    # Convert half-cell y positions to cell coordinates
+    # enemy_y_half stores vertical position in half-cells (0-16)
+    # Cell lookup: cell_y = y_half // 2 (integer division)
+    cell_y = enemy_state.enemy_y_half // 2
+
+    # Get positions of colliding enemies only
+    # We only need to count damage for enemies that actually collided
+    colliding_cell_y = cell_y[collisions]
+    colliding_x = enemy_state.enemy_x[collisions]
+
+    # Count damage per cell using np.add.at()
+    # This accumulates damage for each (cell_y, x) coordinate pair
+    # Initialize damage array with zeros (same shape as grid)
+    damage = np.zeros((9, 13), dtype=np.int8)
+
+    # Accumulate damage: for each colliding enemy, add 1 to damage[cell_y, x]
+    # np.add.at handles duplicate indices correctly (cumulative addition)
+    np.add.at(damage, (colliding_cell_y, colliding_x), 1)
+
+    # Find walls destroyed: damage >= current HP (and wall exists)
+    # AI NOTE: wall_hp is uint8, so direct subtraction would underflow.
+    # We compare damage to HP first to identify destroyed walls, then
+    # use signed arithmetic for the actual HP update.
+    destroyed = (damage > 0) & (damage >= grid_state.wall_hp)
+
+    # Apply damage using signed arithmetic to avoid uint8 underflow
+    # Cast to int16, subtract, clamp to 0 minimum, cast back to uint8
+    new_hp = grid_state.wall_hp.astype(np.int16) - damage
+    new_hp = np.maximum(new_hp, 0)
+    grid_state.wall_hp = new_hp.astype(np.uint8)
+
+    # Count walls destroyed
+    walls_destroyed = int(np.sum(destroyed))
+
+    # Clear destroyed walls (vectorized assignment)
+    # Set grid to EMPTY for all destroyed walls
+    grid_state.grid[destroyed] = EMPTY
+
+    # Reset wall_hp to 0 for destroyed walls
+    grid_state.wall_hp[destroyed] = 0
+
+    # Clear armed status for destroyed walls
+    grid_state.wall_armed[destroyed] = False
+
+    # Clear pending status for destroyed walls
+    grid_state.wall_pending[destroyed] = False
+
+    return enemies_killed, walls_destroyed

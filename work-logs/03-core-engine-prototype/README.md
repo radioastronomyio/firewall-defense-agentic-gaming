@@ -87,7 +87,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Sub-Task | Issue | Status | Description |
 |----------|-------|--------|-------------|
 | 3.4.1 | #19 | ✅ Complete | Vectorized collision detection |
-| 3.4.2 | #20 | ⬜ Pending | Damage stacking and wall destruction |
+| 3.4.2 | #20 | ✅ Complete | Damage stacking and wall destruction |
 | 3.4.3 | #21 | ⬜ Pending | Core breach detection |
 | 3.4.4 | #22 | ⬜ Pending | Unit tests for collision scenarios |
 
@@ -295,6 +295,36 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ---
 
+### Session 10 — 2026-01-08
+
+**Focus:** Task 3.4.2 (Damage stacking and wall destruction)
+
+| Activity | Result |
+|----------|--------|
+| 3.4.2: Collision resolution | `resolve_collisions()` — damage stacking, wall destruction, enemy death |
+| Export updates | `__init__.py` updated with `resolve_collisions` export |
+| Bug fix | Fixed uint8 underflow bug in KC output — wall_hp subtraction now uses signed arithmetic |
+
+**Key implementation details:**
+- `np.add.at()` for vectorized damage counting per cell
+- Handles multiple enemies on same cell (damage stacks cumulatively)
+- Signed arithmetic to avoid uint8 underflow: cast to int16, subtract, clamp to 0, cast back
+- Destruction check: `(damage > 0) & (damage >= wall_hp)` before HP update
+- Clears all wall state on destruction: grid, wall_hp, wall_armed, wall_pending
+- Marks colliding enemies dead: `enemy_alive[collisions] = False`
+- Returns `(enemies_killed, walls_destroyed)` tuple for reward calculation
+
+**Bug caught during review:**
+- KC's initial implementation used `grid_state.wall_hp -= damage` which causes uint8 underflow
+- Example: HP=1, damage=3 → wraps to 254 instead of -2
+- Fixed by comparing damage to HP first, then using signed arithmetic with clamping
+
+**Artifacts produced:**
+- `src/core/collision.py` — added `resolve_collisions()` function
+- `src/core/__init__.py` — updated exports
+
+---
+
 ## 5. Key Technical Decisions
 
 | Decision | Rationale | Reference |
@@ -316,7 +346,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Cooldown system | `src/core/cooldowns.py` | `apply_cooldowns()`, `tick_cooldowns()` |
 | Core package | `src/core/__init__.py` | Public API exports |
 | Enemy state | `src/core/enemies.py` | EnemyState dataclass, factory, movement, spawn |
-| Collision | `src/core/collision.py` | `detect_collisions()` vectorized detection |
+| Collision | `src/core/collision.py` | `detect_collisions()`, `resolve_collisions()` |
 | Constant tests | `src/tests/unit/test_constants.py` | 41 tests validating constants |
 | Grid tests | `src/tests/unit/test_grid.py` | 27 tests validating grid state |
 | Wall tests | `tests/unit/test_walls.py` | 43 tests validating wall lifecycle |
@@ -332,3 +362,4 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Headless SPS | > 10,000 | ⬜ Not measured |
 | Determinism | seed + actions = trajectory | ⬜ Not tested |
 | All M03 tests | Pass | 🔄 ~180 passing |
+| uint8 safety | No underflow | ✅ Verified in 3.4.2 |

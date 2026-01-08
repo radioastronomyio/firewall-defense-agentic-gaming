@@ -70,7 +70,7 @@ Implement vectorized collision detection and resolution.
 | Sub-Task | Status | Description |
 |----------|--------|-------------|
 | 3.4.1: Vectorized collision detection | ✅ Complete | Check all alive enemies against grid in single operation. Only armed walls trigger collision. No Python loops. |
-| 3.4.2: Damage stacking and wall destruction | ⬜ Pending | Multiple enemies on same cell: damage stacks. wall_hp -= count. Wall destroyed at HP ≤ 0. |
+| 3.4.2: Damage stacking and wall destruction | ✅ Complete | `resolve_collisions()` — np.add.at() for damage counting, signed arithmetic for uint8 safety, returns (killed, destroyed). |
 | 3.4.3: Core breach detection | ⬜ Pending | Check `enemy_y_half[alive] >= 16`. Single breach ends episode. |
 | 3.4.4: Unit tests for collision scenarios | ⬜ Pending | `tests/unit/test_collision.py` covering single hit, multi-hit, damage stacking, core breach, unarmed wall no-collision. |
 
