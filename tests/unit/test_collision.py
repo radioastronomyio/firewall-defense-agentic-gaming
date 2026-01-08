@@ -43,8 +43,8 @@ Examples
 
 import numpy as np
 
-from src.core.collision import detect_collisions
-from src.core.constants import MAX_ENEMIES
+from src.core.collision import detect_collisions, detect_core_breach, resolve_collisions
+from src.core.constants import EMPTY, MAX_ENEMIES
 from src.core.enemies import create_enemy_state
 from src.core.grid import create_grid_state
 
@@ -525,3 +525,498 @@ class TestDetectCollisionsReturnShape:
         # Rest should be False (dead)
         for i in range(5, MAX_ENEMIES):
             assert collisions[i] == False, f"Dead slot {i} should not collide"
+
+
+# =============================================================================
+# Collision Resolution Tests - Single Hit
+# =============================================================================
+
+
+class TestResolveCollisionsSingleHit:
+    """Test single enemy collision scenarios."""
+
+    def test_single_enemy_on_wall_kills_enemy_damages_wall(self):
+        """Verify single enemy colliding with wall: enemy dies, wall takes 1 damage."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm wall with HP=3
+        grid.grid[4, 6] = 1
+        grid.wall_armed[4, 6] = True
+        grid.wall_hp[4, 6] = 3
+
+        # Spawn enemy at wall position
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 8  # cell 4
+        enemies.enemy_x[0] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 1, "Should kill 1 enemy"
+        assert walls_destroyed == 0, "Should not destroy wall (HP=3, damage=1)"
+        assert enemies.enemy_alive[0] == False, "Enemy should be dead"
+        assert grid.wall_hp[4, 6] == 2, "Wall HP should decrement from 3 to 2"
+
+    def test_enemy_on_empty_cell_no_collision(self):
+        """Verify enemy on empty cell: no state change."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Spawn enemy at empty cell
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 8  # cell 4
+        enemies.enemy_x[0] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 0, "Should kill 0 enemies"
+        assert walls_destroyed == 0, "Should destroy 0 walls"
+        assert enemies.enemy_alive[0] == True, "Enemy should still be alive"
+        assert grid.wall_hp[4, 6] == 0, "Wall HP should remain 0 (no wall)"
+
+    def test_wall_hp_decrements_correctly(self):
+        """Verify wall HP decrements correctly (HP=3 -> HP=2 after 1 hit)."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm wall with HP=3
+        grid.grid[4, 6] = 1
+        grid.wall_armed[4, 6] = True
+        grid.wall_hp[4, 6] = 3
+
+        # Spawn enemy at wall position
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 8  # cell 4
+        enemies.enemy_x[0] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        resolve_collisions(grid, enemies, collisions)
+
+        assert grid.wall_hp[4, 6] == 2, "Wall HP should decrement from 3 to 2"
+
+
+# =============================================================================
+# Collision Resolution Tests - Multi-Hit (Damage Stacking)
+# =============================================================================
+
+
+class TestResolveCollisionsMultiHit:
+    """Test damage stacking with multiple enemies on same wall."""
+
+    def test_two_enemies_same_cell_wall_takes_two_damage(self):
+        """Verify 2 enemies same cell: wall takes 2 damage, both enemies die."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm wall with HP=3
+        grid.grid[4, 6] = 1
+        grid.wall_armed[4, 6] = True
+        grid.wall_hp[4, 6] = 3
+
+        # Spawn 2 enemies at same wall position
+        for i in range(2):
+            enemies.enemy_alive[i] = True
+            enemies.enemy_y_half[i] = 8  # cell 4
+            enemies.enemy_x[i] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 2, "Should kill 2 enemies"
+        assert walls_destroyed == 0, "Should not destroy wall (HP=3, damage=2)"
+        assert enemies.enemy_alive[0] == False, "Enemy 0 should be dead"
+        assert enemies.enemy_alive[1] == False, "Enemy 1 should be dead"
+        assert grid.wall_hp[4, 6] == 1, "Wall HP should decrement from 3 to 1"
+
+    def test_three_enemies_same_cell_wall_takes_three_damage(self):
+        """Verify 3 enemies same cell: wall takes 3 damage, all enemies die."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm wall with HP=3
+        grid.grid[4, 6] = 1
+        grid.wall_armed[4, 6] = True
+        grid.wall_hp[4, 6] = 3
+
+        # Spawn 3 enemies at same wall position
+        for i in range(3):
+            enemies.enemy_alive[i] = True
+            enemies.enemy_y_half[i] = 8  # cell 4
+            enemies.enemy_x[i] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 3, "Should kill 3 enemies"
+        assert walls_destroyed == 1, "Should destroy wall (HP=3, damage=3)"
+        assert all(enemies.enemy_alive[0:3] == False), "All 3 enemies should be dead"
+        assert grid.wall_hp[4, 6] == 0, "Wall HP should be 0 (destroyed)"
+        assert grid.grid[4, 6] == EMPTY, "Grid cell should be EMPTY"
+        assert grid.wall_armed[4, 6] == False, "Wall armed should be False"
+
+    def test_multiple_enemies_different_walls_independent_damage(self):
+        """Verify multiple enemies on different walls: each wall damaged independently."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm 2 walls with HP=2
+        for i, (y, x) in enumerate([(3, 4), (5, 7)]):
+            grid.grid[y, x] = 1
+            grid.wall_armed[y, x] = True
+            grid.wall_hp[y, x] = 2
+
+        # Spawn 2 enemies, each on different wall
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 6  # cell 3
+        enemies.enemy_x[0] = 4
+
+        enemies.enemy_alive[1] = True
+        enemies.enemy_y_half[1] = 10  # cell 5
+        enemies.enemy_x[1] = 7
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 2, "Should kill 2 enemies"
+        assert walls_destroyed == 0, "Should not destroy walls (HP=2, damage=1 each)"
+        assert grid.wall_hp[3, 4] == 1, "Wall at (3,4) HP should decrement from 2 to 1"
+        assert grid.wall_hp[5, 7] == 1, "Wall at (5,7) HP should decrement from 2 to 1"
+
+
+# =============================================================================
+# Collision Resolution Tests - Wall Destruction
+# =============================================================================
+
+
+class TestResolveCollisionsWallDestruction:
+    """Test wall destruction scenarios."""
+
+    def test_wall_destroyed_when_damage_equals_hp(self):
+        """Verify wall destroyed when damage >= HP (HP=2, 2 enemies -> destroyed)."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm wall with HP=2
+        grid.grid[4, 6] = 1
+        grid.wall_armed[4, 6] = True
+        grid.wall_hp[4, 6] = 2
+
+        # Spawn 2 enemies at wall position
+        for i in range(2):
+            enemies.enemy_alive[i] = True
+            enemies.enemy_y_half[i] = 8  # cell 4
+            enemies.enemy_x[i] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 2, "Should kill 2 enemies"
+        assert walls_destroyed == 1, "Should destroy 1 wall"
+        assert grid.wall_hp[4, 6] == 0, "Wall HP should be 0"
+        assert grid.grid[4, 6] == EMPTY, "Grid cell should be EMPTY"
+        assert grid.wall_armed[4, 6] == False, "Wall armed should be False"
+        assert grid.wall_pending[4, 6] == False, "Wall pending should be False"
+
+    def test_wall_survives_when_damage_less_than_hp(self):
+        """Verify wall survives when damage < HP (HP=3, 2 enemies -> HP=1)."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm wall with HP=3
+        grid.grid[4, 6] = 1
+        grid.wall_armed[4, 6] = True
+        grid.wall_hp[4, 6] = 3
+
+        # Spawn 2 enemies at wall position
+        for i in range(2):
+            enemies.enemy_alive[i] = True
+            enemies.enemy_y_half[i] = 8  # cell 4
+            enemies.enemy_x[i] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 2, "Should kill 2 enemies"
+        assert walls_destroyed == 0, "Should not destroy wall (HP=3, damage=2)"
+        assert grid.wall_hp[4, 6] == 1, "Wall HP should be 1"
+        assert grid.grid[4, 6] == 1, "Grid cell should still be WALL"
+        assert grid.wall_armed[4, 6] == True, "Wall armed should still be True"
+
+    def test_destruction_clears_all_wall_state(self):
+        """Verify destruction clears all wall state: grid=EMPTY, wall_hp=0, armed=False, pending=False."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm wall with HP=2
+        grid.grid[4, 6] = 1
+        grid.wall_armed[4, 6] = True
+        grid.wall_pending[4, 6] = True  # Also test pending flag
+        grid.wall_hp[4, 6] = 2
+
+        # Spawn 2 enemies at wall position
+        for i in range(2):
+            enemies.enemy_alive[i] = True
+            enemies.enemy_y_half[i] = 8  # cell 4
+            enemies.enemy_x[i] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        resolve_collisions(grid, enemies, collisions)
+
+        assert grid.grid[4, 6] == EMPTY, "Grid cell should be EMPTY"
+        assert grid.wall_hp[4, 6] == 0, "Wall HP should be 0"
+        assert grid.wall_armed[4, 6] == False, "Wall armed should be False"
+        assert grid.wall_pending[4, 6] == False, "Wall pending should be False"
+
+    def test_uint8_safety_no_underflow_when_damage_exceeds_hp(self):
+        """Verify uint8 safety: no underflow when damage > HP (HP=1, 3 enemies -> HP clamps to 0)."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm wall with HP=1
+        grid.grid[4, 6] = 1
+        grid.wall_armed[4, 6] = True
+        grid.wall_hp[4, 6] = 1
+
+        # Spawn 3 enemies at wall position (damage=3, HP=1)
+        for i in range(3):
+            enemies.enemy_alive[i] = True
+            enemies.enemy_y_half[i] = 8  # cell 4
+            enemies.enemy_x[i] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 3, "Should kill 3 enemies"
+        assert walls_destroyed == 1, "Should destroy 1 wall"
+        assert grid.wall_hp[4, 6] == 0, "Wall HP should clamp to 0 (no underflow)"
+        assert grid.grid[4, 6] == EMPTY, "Grid cell should be EMPTY"
+
+
+# =============================================================================
+# Collision Resolution Tests - Return Values
+# =============================================================================
+
+
+class TestResolveCollisionsReturnValues:
+    """Test return values from resolve_collisions()."""
+
+    def test_return_tuple_shape(self):
+        """Verify return tuple shape: (enemies_killed, walls_destroyed)."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm wall
+        grid.grid[4, 6] = 1
+        grid.wall_armed[4, 6] = True
+        grid.wall_hp[4, 6] = 2
+
+        # Spawn enemy
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 8
+        enemies.enemy_x[0] = 6
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        result = resolve_collisions(grid, enemies, collisions)
+
+        assert isinstance(result, tuple), "Return value should be tuple"
+        assert len(result) == 2, "Return tuple should have 2 elements"
+        assert isinstance(result[0], int), "First element should be int"
+        assert isinstance(result[1], int), "Second element should be int"
+
+    def test_return_values_match_actual_mutations(self):
+        """Verify return values match actual state mutations."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm 2 walls with different HP
+        grid.grid[3, 4] = 1
+        grid.wall_armed[3, 4] = True
+        grid.wall_hp[3, 4] = 3  # Survives 2 hits
+
+        grid.grid[5, 7] = 1
+        grid.wall_armed[5, 7] = True
+        grid.wall_hp[5, 7] = 2  # Destroyed by 2 hits
+
+        # Spawn 4 enemies: 2 on each wall
+        for i in range(2):
+            enemies.enemy_alive[i] = True
+            enemies.enemy_y_half[i] = 6  # cell 3
+            enemies.enemy_x[i] = 4
+
+        for i in range(2, 4):
+            enemies.enemy_alive[i] = True
+            enemies.enemy_y_half[i] = 10  # cell 5
+            enemies.enemy_x[i] = 7
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        # Verify return values
+        assert enemies_killed == 4, "Return value should indicate 4 enemies killed"
+
+        # Verify actual mutations match return values
+        actual_enemies_killed = int(np.sum(~enemies.enemy_alive[0:4]))
+        actual_walls_destroyed = int(
+            (grid.grid[3, 4] == EMPTY) + (grid.grid[5, 7] == EMPTY)
+        )
+        assert enemies_killed == actual_enemies_killed, "Return value should match actual enemies killed"
+        assert walls_destroyed == actual_walls_destroyed, "Return value should match actual walls destroyed"
+
+    def test_no_collisions_returns_zero_zero(self):
+        """Verify no collisions returns (0, 0)."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Spawn enemies on empty cells
+        for i in range(3):
+            enemies.enemy_alive[i] = True
+            enemies.enemy_y_half[i] = i * 2
+            enemies.enemy_x[i] = i
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 0, "Should kill 0 enemies"
+        assert walls_destroyed == 0, "Should destroy 0 walls"
+        assert (enemies_killed, walls_destroyed) == (0, 0), "Return should be (0, 0)"
+
+    def test_multiple_walls_destroyed_returns_correct_count(self):
+        """Verify multiple walls destroyed returns correct count."""
+        grid = create_grid_state()
+        enemies = create_enemy_state()
+
+        # Place and arm 3 walls with HP=2
+        for i, (y, x) in enumerate([(2, 3), (4, 6), (6, 9)]):
+            grid.grid[y, x] = 1
+            grid.wall_armed[y, x] = True
+            grid.wall_hp[y, x] = 2
+
+        # Spawn 2 enemies on each wall (6 total)
+        for i, (y, x) in enumerate([(2, 3), (4, 6), (6, 9)]):
+            enemies.enemy_alive[i * 2] = True
+            enemies.enemy_y_half[i * 2] = y * 2
+            enemies.enemy_x[i * 2] = x
+
+            enemies.enemy_alive[i * 2 + 1] = True
+            enemies.enemy_y_half[i * 2 + 1] = y * 2
+            enemies.enemy_x[i * 2 + 1] = x
+
+        # Detect and resolve collisions
+        collisions = detect_collisions(grid, enemies)
+        enemies_killed, walls_destroyed = resolve_collisions(grid, enemies, collisions)
+
+        assert enemies_killed == 6, "Should kill 6 enemies"
+        assert walls_destroyed == 3, "Should destroy 3 walls"
+        assert grid.grid[2, 3] == EMPTY, "Wall at (2,3) should be destroyed"
+        assert grid.grid[4, 6] == EMPTY, "Wall at (4,6) should be destroyed"
+        assert grid.grid[6, 9] == EMPTY, "Wall at (6,9) should be destroyed"
+
+
+# =============================================================================
+# Core Breach Detection Tests
+# =============================================================================
+
+
+class TestDetectCoreBreach:
+    """Test core breach detection scenarios."""
+
+    def test_y_half_fifteen_no_breach(self):
+        """Verify y_half=15 (row 7): no breach."""
+        enemies = create_enemy_state()
+
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 15  # Row 7, one above core
+
+        breach = detect_core_breach(enemies)
+
+        assert breach == False, "y_half=15 should not breach"
+
+    def test_y_half_sixteen_breach_detected(self):
+        """Verify y_half=16 (row 8, threshold): breach detected."""
+        enemies = create_enemy_state()
+
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 16  # Row 8, core row
+
+        breach = detect_core_breach(enemies)
+
+        assert breach == True, "y_half=16 should breach"
+
+    def test_y_half_seventeen_beyond_threshold(self):
+        """Verify y_half=17 (beyond threshold): breach detected."""
+        enemies = create_enemy_state()
+
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 17  # Beyond core
+
+        breach = detect_core_breach(enemies)
+
+        assert breach == True, "y_half=17 should breach"
+
+    def test_dead_enemy_at_threshold_no_breach(self):
+        """Verify dead enemy at threshold: no breach (dead enemies ignored)."""
+        enemies = create_enemy_state()
+
+        enemies.enemy_alive[0] = False  # Dead
+        enemies.enemy_y_half[0] = 16  # At threshold
+
+        breach = detect_core_breach(enemies)
+
+        assert breach == False, "Dead enemy should not trigger breach"
+
+    def test_multiple_enemies_only_one_breached(self):
+        """Verify multiple enemies, only one breached: breach detected."""
+        enemies = create_enemy_state()
+
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 10  # Safe
+
+        enemies.enemy_alive[1] = True
+        enemies.enemy_y_half[1] = 16  # Breached
+
+        enemies.enemy_alive[2] = True
+        enemies.enemy_y_half[2] = 12  # Safe
+
+        breach = detect_core_breach(enemies)
+
+        assert breach == True, "One breached enemy should trigger breach"
+
+    def test_no_alive_enemies_no_breach(self):
+        """Verify no alive enemies: no breach."""
+        enemies = create_enemy_state()
+
+        # All enemies dead
+        for i in range(5):
+            enemies.enemy_alive[i] = False
+            enemies.enemy_y_half[i] = 16  # Even at threshold
+
+        breach = detect_core_breach(enemies)
+
+        assert breach == False, "No alive enemies should not breach"
+
+    def test_return_type_is_bool(self):
+        """Verify return type is bool."""
+        enemies = create_enemy_state()
+
+        enemies.enemy_alive[0] = True
+        enemies.enemy_y_half[0] = 16
+
+        breach = detect_core_breach(enemies)
+
+        assert isinstance(breach, bool), "Return type should be bool"
+        assert breach == True, "Should return True for breach"
