@@ -39,7 +39,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | 3.1: Grid State Management | 3.1.1-3.1.3 | ✅ Complete | Core arrays, GridState dataclass, factory function |
 | 3.2: Wall Mechanics | 3.2.1-3.2.4 | ✅ Complete | Placement, cooldowns, arming, tests |
 | 3.3: Enemy System | 3.3.1-3.3.5 | ✅ Complete | Fixed-slot arrays, movement, spawn, compaction |
-| 3.4: Collision Resolution | 3.4.1-3.4.4 | ⬜ Pending | Vectorized detection, damage, core breach |
+| 3.4: Collision Resolution | 3.4.1-3.4.4 | 🔄 In Progress | Vectorized detection, damage, core breach |
 | 3.5: Step Loop | 3.5.1-3.5.3 | ⬜ Pending | Deterministic ordering, RNG, integration test |
 
 ---
@@ -81,6 +81,15 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | 3.3.3 | #15 | ✅ Complete | Spawn logic |
 | 3.3.4 | #16 | ✅ Complete | Array compaction |
 | 3.3.5 | #17 | ✅ Complete | Unit tests for enemy lifecycle |
+
+### Task 3.4: Collision Resolution 🔄
+
+| Sub-Task | Issue | Status | Description |
+|----------|-------|--------|-------------|
+| 3.4.1 | #19 | ✅ Complete | Vectorized collision detection |
+| 3.4.2 | #20 | ⬜ Pending | Damage stacking and wall destruction |
+| 3.4.3 | #21 | ⬜ Pending | Core breach detection |
+| 3.4.4 | #22 | ⬜ Pending | Unit tests for collision scenarios |
 
 ---
 
@@ -256,6 +265,36 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ---
 
+### Session 9 — 2026-01-08
+
+**Focus:** Task 3.4.1 (Vectorized collision detection)
+
+| Activity | Result |
+|----------|--------|
+| 3.4.1: Collision detection | `detect_collisions()` — vectorized enemy/wall collision check |
+| Export updates | `__init__.py` updated with `detect_collisions` export |
+| Unit tests | 20 tests covering all collision scenarios |
+
+**Key implementation details:**
+- Advanced NumPy indexing: `wall_armed[cell_y, enemy_x]` checks all 20 positions in single operation
+- Half-cell conversion: `cell_y = enemy_y_half // 2` for cell lookup
+- Combined with `enemy_alive` mask — dead enemies cannot collide
+- Only `wall_armed=True` triggers collision (pending walls do not)
+- Returns boolean array shape `(MAX_ENEMIES,)` = `(20,)`
+
+**Test coverage:**
+- `TestDetectCollisionsBasic` — no enemies, no walls, single enemy, pending wall handling
+- `TestDetectCollisionsMultiple` — multiple enemies, same cell, alive/dead mix
+- `TestDetectCollisionsHalfCell` — y_half=0, 1, 2, 17 edge cases, boundary crossing
+- `TestDetectCollisionsReturnShape` — shape validation, dtype, dead slots
+
+**Artifacts produced:**
+- `src/core/collision.py` — `detect_collisions()` function
+- `tests/unit/test_collision.py` — 20 collision detection tests
+- `src/core/__init__.py` — updated exports
+
+---
+
 ## 5. Key Technical Decisions
 
 | Decision | Rationale | Reference |
@@ -277,10 +316,12 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Cooldown system | `src/core/cooldowns.py` | `apply_cooldowns()`, `tick_cooldowns()` |
 | Core package | `src/core/__init__.py` | Public API exports |
 | Enemy state | `src/core/enemies.py` | EnemyState dataclass, factory, movement, spawn |
+| Collision | `src/core/collision.py` | `detect_collisions()` vectorized detection |
 | Constant tests | `src/tests/unit/test_constants.py` | 41 tests validating constants |
 | Grid tests | `src/tests/unit/test_grid.py` | 27 tests validating grid state |
 | Wall tests | `tests/unit/test_walls.py` | 43 tests validating wall lifecycle |
 | Enemy tests | `tests/unit/test_enemies.py` | 49 tests validating enemy lifecycle |
+| Collision tests | `tests/unit/test_collision.py` | 20 tests validating collision detection |
 
 ---
 
@@ -290,4 +331,4 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 |--------|--------|---------|
 | Headless SPS | > 10,000 | ⬜ Not measured |
 | Determinism | seed + actions = trajectory | ⬜ Not tested |
-| All M03 tests | Pass | 🔄 ~160 passing |
+| All M03 tests | Pass | 🔄 ~180 passing |
