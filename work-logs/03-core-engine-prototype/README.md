@@ -88,7 +88,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 |----------|-------|--------|-------------|
 | 3.4.1 | #19 | ✅ Complete | Vectorized collision detection |
 | 3.4.2 | #20 | ✅ Complete | Damage stacking and wall destruction |
-| 3.4.3 | #21 | ⬜ Pending | Core breach detection |
+| 3.4.3 | #21 | ✅ Complete | Core breach detection |
 | 3.4.4 | #22 | ⬜ Pending | Unit tests for collision scenarios |
 
 ---
@@ -325,6 +325,28 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ---
 
+### Session 11 — 2026-01-08
+
+**Focus:** Task 3.4.3 (Core breach detection)
+
+| Activity | Result |
+|----------|--------|
+| 3.4.3: Core breach detection | `detect_core_breach()` — vectorized check for enemies reaching bottom |
+| Export updates | `__init__.py` updated with `detect_core_breach` export |
+
+**Key implementation details:**
+- Vectorized single-liner: `bool(np.any(enemy_state.enemy_y_half[enemy_state.enemy_alive] >= CORE_Y_HALF))`
+- Breach threshold: `CORE_Y_HALF = 16` (row 8, bottom of grid)
+- Only checks alive enemies via boolean indexing
+- Returns `True` if any alive enemy has `y_half >= 16`, `False` otherwise
+- No bounds checking — enemies constrained by movement logic
+
+**Artifacts produced:**
+- `src/core/collision.py` — added `detect_core_breach()` function
+- `src/core/__init__.py` — updated exports
+
+---
+
 ## 5. Key Technical Decisions
 
 | Decision | Rationale | Reference |
@@ -346,7 +368,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Cooldown system | `src/core/cooldowns.py` | `apply_cooldowns()`, `tick_cooldowns()` |
 | Core package | `src/core/__init__.py` | Public API exports |
 | Enemy state | `src/core/enemies.py` | EnemyState dataclass, factory, movement, spawn |
-| Collision | `src/core/collision.py` | `detect_collisions()`, `resolve_collisions()` |
+| Collision | `src/core/collision.py` | `detect_collisions()`, `resolve_collisions()`, `detect_core_breach()` |
 | Constant tests | `src/tests/unit/test_constants.py` | 41 tests validating constants |
 | Grid tests | `src/tests/unit/test_grid.py` | 27 tests validating grid state |
 | Wall tests | `tests/unit/test_walls.py` | 43 tests validating wall lifecycle |

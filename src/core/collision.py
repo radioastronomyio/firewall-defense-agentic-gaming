@@ -13,6 +13,7 @@ Vectorized collision detection and resolution for enemies and walls. This module
 implements the complete collision pipeline:
 1. detect_collisions() - Identify which enemies occupy cells with armed walls
 2. resolve_collisions() - Apply damage, destroy walls, mark enemies dead
+3. detect_core_breach() - Check if any alive enemy reached the bottom row
 
 The detection uses advanced NumPy indexing to check all enemy positions against
 the wall_armed grid in a single vectorized operation. No Python loops over
@@ -34,8 +35,8 @@ Collision Rules (Section 6.2)
 
 Note
 ----
-Core breach detection (enemies reaching bottom row) is handled separately
-in Task 3.4.3. This module focuses on wall-enemy collisions only.
+This module implements the complete collision pipeline including wall-enemy
+collisions and core breach detection (enemies reaching bottom row).
 
 Usage
 -----
@@ -66,7 +67,7 @@ Usage
 
 import numpy as np
 
-from src.core.constants import EMPTY
+from src.core.constants import CORE_Y_HALF, EMPTY
 from src.core.enemies import EnemyState
 from src.core.grid import GridState
 
@@ -387,3 +388,95 @@ def resolve_collisions(
     grid_state.wall_pending[destroyed] = False
 
     return enemies_killed, walls_destroyed
+
+
+# =============================================================================
+# Core Breach Detection
+# =============================================================================
+
+
+def detect_core_breach(enemy_state: EnemyState) -> bool:
+    """
+    Check if any alive enemy has breached the core (reached bottom).
+
+    A core breach occurs when any alive enemy reaches or exceeds the
+    CORE_Y_HALF threshold (16 half-cells, corresponding to row 8 at the
+    bottom of the grid). This is a game-ending condition—a single breach
+    terminates the episode with a negative reward.
+
+    The detection is vectorized for performance, checking all alive enemies
+    in a single NumPy operation without Python loops.
+
+    Technical Details
+    -----------------
+    - Breach threshold: CORE_Y_HALF = 16 (from constants.py)
+    - Grid height: 9 rows = 18 half-cells (0-17)
+    - Core row: Row 8 (bottom row) starts at y_half = 16
+    - Vectorized check: enemy_state.enemy_y_half[enemy_state.enemy_alive] >= CORE_Y_HALF
+    - Aggregation: np.any() returns True if any alive enemy meets condition
+    - No bounds checking: Enemy movement is constrained to grid bounds
+    - In-place read: enemy_state is not modified (read-only operation)
+
+    Position System Context
+    -----------------------
+    - enemy_y_half stores vertical position in half-cells (0-16 for grid height 9)
+    - Cell lookup: cell_y = enemy_y_half // 2
+    - Example: y_half=15 maps to cell 7, y_half=16 maps to cell 8 (core row)
+    - Breach occurs when enemy reaches y_half >= 16 (row 8 or beyond)
+
+    Parameters
+    ----------
+    enemy_state : EnemyState
+        Current enemy state containing positions and alive mask.
+        enemy_y_half: Half-cell y positions (int16, shape 20)
+        enemy_alive: Active mask (bool, shape 20)
+
+    Returns
+    -------
+    bool
+        True if any alive enemy has enemy_y_half >= CORE_Y_HALF (16),
+        False otherwise. A single breach ends the episode.
+
+    Notes
+    -----
+    - Only alive enemies are checked (dead slots ignored via boolean indexing)
+    - The check is inclusive: y_half == 16 counts as a breach
+    - This function is called once per tick during the simulation step loop
+    - Core breach is checked after collision resolution (Task 3.5.1)
+    - A single breach immediately terminates the episode with reward -1.0
+
+    Examples
+    --------
+    >>> from src.core.enemies import create_enemy_state
+    >>> from src.core.collision import detect_core_breach
+    >>> enemies = create_enemy_state()
+    >>> # Enemy not breached yet
+    >>> enemies.enemy_alive[0] = True
+    >>> enemies.enemy_y_half[0] = 15  # Row 7, one row above core
+    >>> detect_core_breach(enemies)
+    False
+    >>> # Enemy at breach threshold
+    >>> enemies.enemy_y_half[0] = 16  # Row 8, core row
+    >>> detect_core_breach(enemies)
+    True
+    >>> # Enemy past breach
+    >>> enemies.enemy_y_half[0] = 17  # Beyond core
+    >>> detect_core_breach(enemies)
+    True
+    >>> # Dead enemy (cannot breach)
+    >>> enemies.enemy_alive[0] = False
+    >>> enemies.enemy_y_half[0] = 16
+    >>> detect_core_breach(enemies)
+    False
+    >>> # Multiple enemies, one breached
+    >>> enemies.enemy_alive[0:2] = True
+    >>> enemies.enemy_y_half[0] = 10  # Safe
+    >>> enemies.enemy_y_half[1] = 16  # Breached
+    >>> detect_core_breach(enemies)
+    True
+    """
+    # Check if any alive enemy has reached or exceeded CORE_Y_HALF
+    # Boolean indexing: enemy_state.enemy_alive selects only alive enemies
+    # Comparison: >= CORE_Y_HALF checks breach condition
+    # Aggregation: np.any() returns True if any alive enemy meets condition
+    return bool(np.any(enemy_state.enemy_y_half[enemy_state.enemy_alive] >= CORE_Y_HALF))
