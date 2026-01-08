@@ -39,7 +39,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | 3.1: Grid State Management | 3.1.1-3.1.3 | ✅ Complete | Core arrays, GridState dataclass, factory function |
 | 3.2: Wall Mechanics | 3.2.1-3.2.4 | ✅ Complete | Placement, cooldowns, arming, tests |
 | 3.3: Enemy System | 3.3.1-3.3.5 | ✅ Complete | Fixed-slot arrays, movement, spawn, compaction |
-| 3.4: Collision Resolution | 3.4.1-3.4.4 | 🔄 In Progress | Vectorized detection, damage, core breach |
+| 3.4: Collision Resolution | 3.4.1-3.4.4 | ✅ Complete | Vectorized detection, damage, core breach |
 | 3.5: Step Loop | 3.5.1-3.5.3 | ⬜ Pending | Deterministic ordering, RNG, integration test |
 
 ---
@@ -82,14 +82,14 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | 3.3.4 | #16 | ✅ Complete | Array compaction |
 | 3.3.5 | #17 | ✅ Complete | Unit tests for enemy lifecycle |
 
-### Task 3.4: Collision Resolution 🔄
+### Task 3.4: Collision Resolution ✅
 
 | Sub-Task | Issue | Status | Description |
 |----------|-------|--------|-------------|
 | 3.4.1 | #19 | ✅ Complete | Vectorized collision detection |
 | 3.4.2 | #20 | ✅ Complete | Damage stacking and wall destruction |
 | 3.4.3 | #21 | ✅ Complete | Core breach detection |
-| 3.4.4 | #22 | ⬜ Pending | Unit tests for collision scenarios |
+| 3.4.4 | #22 | ✅ Complete | Unit tests for collision scenarios |
 
 ---
 
@@ -347,6 +347,27 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ---
 
+### Session 12 — 2026-01-08
+
+**Focus:** Task 3.4.4 (Collision scenario unit tests)
+
+| Activity | Result |
+|----------|--------|
+| 3.4.4: Collision tests | 21 new tests covering resolve_collisions() and detect_core_breach() |
+| Task 3.4 complete | All collision resolution functions implemented and tested |
+
+**Test coverage:**
+- `TestResolveCollisionsSingleHit` — single enemy, HP decrement, no-collision case
+- `TestResolveCollisionsMultiHit` — damage stacking (2, 3 enemies same cell), independent walls
+- `TestResolveCollisionsWallDestruction` — destruction threshold, state clearing, uint8 safety
+- `TestResolveCollisionsReturnValues` — tuple shape, mutation matching, zero returns
+- `TestDetectCoreBreach` — threshold boundaries (15/16/17), dead enemy exclusion, bool return
+
+**Artifacts produced:**
+- `tests/unit/test_collision.py` — extended from 20 to 41 tests
+
+---
+
 ## 5. Key Technical Decisions
 
 | Decision | Rationale | Reference |
@@ -373,7 +394,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Grid tests | `src/tests/unit/test_grid.py` | 27 tests validating grid state |
 | Wall tests | `tests/unit/test_walls.py` | 43 tests validating wall lifecycle |
 | Enemy tests | `tests/unit/test_enemies.py` | 49 tests validating enemy lifecycle |
-| Collision tests | `tests/unit/test_collision.py` | 20 tests validating collision detection |
+| Collision tests | `tests/unit/test_collision.py` | 41 tests validating collision pipeline |
 
 ---
 
@@ -383,5 +404,5 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 |--------|--------|---------|
 | Headless SPS | > 10,000 | ⬜ Not measured |
 | Determinism | seed + actions = trajectory | ⬜ Not tested |
-| All M03 tests | Pass | 🔄 ~180 passing |
+| All M03 tests | Pass | 🔄 ~201 passing |
 | uint8 safety | No underflow | ✅ Verified in 3.4.2 |
