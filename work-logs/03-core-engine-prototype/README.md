@@ -40,7 +40,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | 3.2: Wall Mechanics | 3.2.1-3.2.4 | ✅ Complete | Placement, cooldowns, arming, tests |
 | 3.3: Enemy System | 3.3.1-3.3.5 | ✅ Complete | Fixed-slot arrays, movement, spawn, compaction |
 | 3.4: Collision Resolution | 3.4.1-3.4.4 | ✅ Complete | Vectorized detection, damage, core breach |
-| 3.5: Step Loop | 3.5.1-3.5.3 | ⬜ Pending | Deterministic ordering, RNG, integration test |
+| 3.5: Step Loop | 3.5.1-3.5.3 | 🔄 In Progress | Deterministic ordering, RNG, integration test |
 
 ---
 
@@ -368,6 +368,38 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ---
 
+### Session 13 — 2026-01-08
+
+**Focus:** Task 3.5.1 (Deterministic step ordering)
+
+| Activity | Result |
+|----------|--------|
+| 3.5.1: Step loop | `src/core/simulation.py` with 12-step deterministic tick order |
+| SimulationState | Dataclass aggregating grid_state, enemy_state, tick, spawn_interval |
+| Export updates | `__init__.py` updated with `SimulationState`, `create_simulation_state`, `step` |
+| Code review fixes | Moved inline collision imports to module level for performance |
+
+**Key implementation details:**
+- 12-step ordering per design doc Section 9 strictly enforced
+- Vectorized operations throughout — no Python loops over enemies/cells
+- In-place mutation for performance (no array copying)
+- Action mapping: `y, x = divmod(action - 1, WIDTH)` for actions 1-117
+- Spawn timing: `tick % spawn_interval == 0` (first spawn at tick 0)
+- Returns `(reward, terminated, truncated)` — observation deferred to Task 4.2
+- Binary reward structure: `REWARD_ENEMY_KILLED * kills + REWARD_TICK_SURVIVED` (+ `REWARD_CORE_BREACH` if breached)
+- Termination: `breached` or `tick >= MAX_EPISODE_TICKS`
+
+**Bug caught during review:**
+- KC placed collision imports inside step() function (lines 377, 396)
+- Inefficient for function called millions of times during training
+- Fixed by moving imports to module level
+
+**Artifacts produced:**
+- `src/core/simulation.py` — `SimulationState`, `create_simulation_state()`, `step()`
+- `src/core/__init__.py` — updated exports
+
+---
+
 ## 5. Key Technical Decisions
 
 | Decision | Rationale | Reference |
@@ -390,6 +422,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Core package | `src/core/__init__.py` | Public API exports |
 | Enemy state | `src/core/enemies.py` | EnemyState dataclass, factory, movement, spawn |
 | Collision | `src/core/collision.py` | `detect_collisions()`, `resolve_collisions()`, `detect_core_breach()` |
+| Simulation | `src/core/simulation.py` | `SimulationState`, `create_simulation_state()`, `step()` |
 | Constant tests | `src/tests/unit/test_constants.py` | 41 tests validating constants |
 | Grid tests | `src/tests/unit/test_grid.py` | 27 tests validating grid state |
 | Wall tests | `tests/unit/test_walls.py` | 43 tests validating wall lifecycle |

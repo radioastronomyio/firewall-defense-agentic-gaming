@@ -80,7 +80,7 @@ Implement deterministic step ordering per design doc Section 9.
 
 | Sub-Task | Status | Description |
 |----------|--------|-------------|
-| 3.5.1: Implement deterministic step ordering | ⬜ Pending | `src/core/simulation.py` with 12-step tick order: decrement CDs → apply action → arm walls → move → collide → breach check → spawn → compact → reward → done → obs → return. |
+| 3.5.1: Implement deterministic step ordering | ✅ Complete | `src/core/simulation.py` with 12-step tick order: decrement CDs → apply action → arm walls → move → collide → breach check → spawn → compact → reward → done → obs → return. |
 | 3.5.2: Seed-based RNG for reproducibility | ⬜ Pending | np.random.Generator per simulation. Seed at reset(). All randomness uses seeded RNG, no global state. |
 | 3.5.3: Integration test for determinism | ⬜ Pending | `tests/integration/test_determinism.py` verifying same seed + same actions = identical trajectory, bit-for-bit. |
 

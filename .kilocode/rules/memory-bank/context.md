@@ -40,9 +40,9 @@ This creates natural episode arcs for 15-minute YouTube content.
 
 ## Current Status
 
-**Phase:** M03 — Core Engine Prototype
+**Phase:** M03 — Core Engine Prototype (nearing completion)
 
-**Active work:** Task 3.4 (Collision Resolution), sub-task 3.4.4 (Unit tests) next
+**Active work:** Task 3.5 (Step Loop), sub-tasks 3.5.2-3.5.3 remaining
 
 **Completed:**
 - M01: Ideation and Setup — GDR research, GPT-5.2 review, spec consolidation, repo scaffolding
@@ -50,9 +50,12 @@ This creates natural episode arcs for 15-minute YouTube content.
 - Task 3.1: Grid State Management — GridState dataclass, factory, unit tests
 - Task 3.2: Wall Mechanics — Placement, cooldowns, arming, full test coverage
 - Task 3.3: Enemy System — Fixed-slot arrays, movement, spawn, compaction, full test coverage
-- Task 3.4.1: Vectorized collision detection — `detect_collisions()` with advanced indexing
-- Task 3.4.2: Damage stacking and wall destruction — `resolve_collisions()` with uint8 safety
-- Task 3.4.3: Core breach detection — `detect_core_breach()` vectorized check
+- Task 3.4: Collision Resolution — `detect_collisions()`, `resolve_collisions()`, `detect_core_breach()`, full test coverage
+- Task 3.5.1: Deterministic step ordering — `SimulationState`, `create_simulation_state()`, `step()` with 12-step tick loop
+
+**Remaining M03:**
+- Task 3.5.2: Seed-based RNG for reproducibility
+- Task 3.5.3: Integration test for determinism
 
 **Next:** After M03 complete, M04 (Gymnasium Integration) sub-tasks will be defined based on learnings.
 
