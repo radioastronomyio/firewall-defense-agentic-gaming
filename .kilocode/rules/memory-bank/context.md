@@ -42,7 +42,7 @@ This creates natural episode arcs for 15-minute YouTube content.
 
 **Phase:** M03 — Core Engine Prototype (nearing completion)
 
-**Active work:** Task 3.5 (Step Loop), sub-tasks 3.5.2-3.5.3 remaining
+**Active work:** Task 3.5 (Step Loop), sub-task 3.5.3 remaining
 
 **Completed:**
 - M01: Ideation and Setup — GDR research, GPT-5.2 review, spec consolidation, repo scaffolding
@@ -52,9 +52,9 @@ This creates natural episode arcs for 15-minute YouTube content.
 - Task 3.3: Enemy System — Fixed-slot arrays, movement, spawn, compaction, full test coverage
 - Task 3.4: Collision Resolution — `detect_collisions()`, `resolve_collisions()`, `detect_core_breach()`, full test coverage
 - Task 3.5.1: Deterministic step ordering — `SimulationState`, `create_simulation_state()`, `step()` with 12-step tick loop
+- Task 3.5.2: Seed-based RNG — RNG encapsulated in SimulationState, `seed` parameter on factory, 8 determinism tests
 
 **Remaining M03:**
-- Task 3.5.2: Seed-based RNG for reproducibility
 - Task 3.5.3: Integration test for determinism
 
 **Next:** After M03 complete, M04 (Gymnasium Integration) sub-tasks will be defined based on learnings.

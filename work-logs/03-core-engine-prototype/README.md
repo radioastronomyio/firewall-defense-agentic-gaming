@@ -40,7 +40,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | 3.2: Wall Mechanics | 3.2.1-3.2.4 | ✅ Complete | Placement, cooldowns, arming, tests |
 | 3.3: Enemy System | 3.3.1-3.3.5 | ✅ Complete | Fixed-slot arrays, movement, spawn, compaction |
 | 3.4: Collision Resolution | 3.4.1-3.4.4 | ✅ Complete | Vectorized detection, damage, core breach |
-| 3.5: Step Loop | 3.5.1-3.5.3 | 🔄 In Progress | Deterministic ordering, RNG, integration test |
+| 3.5: Step Loop | 3.5.1-3.5.3 | 🔄 In Progress | Deterministic ordering, RNG (complete), integration test |
 
 ---
 
@@ -400,6 +400,35 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 
 ---
 
+### Session 14 — 2026-01-08
+
+**Focus:** Task 3.5.2 (Seed-based RNG for reproducibility)
+
+| Activity | Result |
+|----------|--------|
+| 3.5.2: RNG encapsulation | `SimulationState.rng` field, `create_simulation_state(seed=)` parameter |
+| step() refactor | Removed external `rng` parameter, uses `sim_state.rng` internally |
+| Unit tests | 8 new tests covering RNG creation, determinism, isolation |
+
+**Key implementation details:**
+- RNG encapsulated in SimulationState as `rng: np.random.Generator` field
+- Factory function accepts `seed: int | None = None` parameter
+- `np.random.default_rng(seed)` for modern NumPy RNG (not deprecated RandomState)
+- Same seed + same actions = bit-identical trajectory (determinism verified)
+- No global `np.random` state mutation (isolation verified)
+- Multiple simulations maintain independent RNG sequences
+
+**Test coverage:**
+- `TestSimulationStateFactory` — RNG creation with default/explicit seed, seed divergence
+- `TestStepRNGUsage` — internal RNG usage, trajectory determinism, seed divergence
+- `TestRNGIsolation` — global state protection, independent RNG per simulation
+
+**Artifacts produced:**
+- `src/core/simulation.py` — updated with RNG encapsulation
+- `tests/unit/test_simulation.py` — 8 new tests for RNG and determinism
+
+---
+
 ## 5. Key Technical Decisions
 
 | Decision | Rationale | Reference |
@@ -428,6 +457,7 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 | Wall tests | `tests/unit/test_walls.py` | 43 tests validating wall lifecycle |
 | Enemy tests | `tests/unit/test_enemies.py` | 49 tests validating enemy lifecycle |
 | Collision tests | `tests/unit/test_collision.py` | 41 tests validating collision pipeline |
+| Simulation tests | `tests/unit/test_simulation.py` | 8 tests validating RNG and determinism |
 
 ---
 
@@ -437,5 +467,5 @@ Objective: Build the complete headless simulation — grid arrays, wall mechanic
 |--------|--------|---------|
 | Headless SPS | > 10,000 | ⬜ Not measured |
 | Determinism | seed + actions = trajectory | ⬜ Not tested |
-| All M03 tests | Pass | 🔄 ~201 passing |
+| All M03 tests | Pass | 🔄 ~209 passing |
 | uint8 safety | No underflow | ✅ Verified in 3.4.2 |
